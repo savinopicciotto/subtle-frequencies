@@ -109,6 +109,58 @@ function App() {
     }
   };
 
+  // Handle share visualization
+  const handleShare = async () => {
+    try {
+      // Find the visualizer canvases
+      const canvases = document.querySelectorAll('canvas');
+      if (canvases.length === 0) {
+        alert('No visualization to share');
+        return;
+      }
+
+      // Create a temporary canvas to composite both layers
+      const tempCanvas = document.createElement('canvas');
+      const firstCanvas = canvases[0];
+      tempCanvas.width = firstCanvas.width;
+      tempCanvas.height = firstCanvas.height;
+      const ctx = tempCanvas.getContext('2d');
+      if (!ctx) return;
+
+      // Draw both canvases (pattern + particles)
+      canvases.forEach((canvas) => {
+        ctx.drawImage(canvas, 0, 0);
+      });
+
+      // Convert to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        tempCanvas.toBlob((b) => resolve(b!), 'image/png');
+      });
+
+      const filename = `subtle-frequencies-${frequency}Hz-${Date.now()}.png`;
+
+      // Try Web Share API first (mobile-friendly)
+      if (navigator.share && navigator.canShare?.({ files: [new File([blob], filename, { type: 'image/png' })] })) {
+        await navigator.share({
+          files: [new File([blob], filename, { type: 'image/png' })],
+          title: 'Subtle Frequencies Visualization',
+          text: `${frequency} Hz cymatic pattern`,
+        });
+      } else {
+        // Fallback: Download
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Failed to share:', error);
+      alert('Failed to share visualization. Please try again.');
+    }
+  };
+
   // Update binaural enabled
   const handleBinauralEnabledChange = (enabled: boolean) => {
     setBinauralEnabled(enabled);
@@ -380,7 +432,7 @@ function App() {
         </header>
 
         {/* Cymatic Visualizer */}
-        <CymaticVisualizer isPlaying={isPlaying} frequency={frequency} />
+        <CymaticVisualizer isPlaying={isPlaying} frequency={frequency} onShareClick={handleShare} />
 
         {/* Main Controls */}
         <FrequencyPlayer
