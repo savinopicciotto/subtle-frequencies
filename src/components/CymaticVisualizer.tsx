@@ -109,6 +109,18 @@ export function CymaticVisualizer({
     waveRendererRef.current = null;
     geometryRendererRef.current = null;
 
+    // Clear both canvases when switching modes
+    const patternCtx = patternCanvas.getContext('2d', { willReadFrequently: false });
+    if (patternCtx) {
+      patternCtx.clearRect(0, 0, size, size);
+      patternCtx.fillStyle = '#0a0a0f';
+      patternCtx.fillRect(0, 0, size, size);
+    }
+    const particleCtx = particleCanvas.getContext('2d', { willReadFrequently: false });
+    if (particleCtx) {
+      particleCtx.clearRect(0, 0, size, size);
+    }
+
     // Create only the renderer for current mode
     switch (mode) {
       case 'cymatic':

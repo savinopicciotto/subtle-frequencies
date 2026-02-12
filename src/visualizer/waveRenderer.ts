@@ -27,8 +27,13 @@ export class WaveRenderer {
   private time: number = 0;
 
   constructor(options: WaveRendererOptions) {
-    this.canvas = options.canvas;
-    this.ctx = this.canvas.getContext('2d')!;
+    // Use particleCanvas for 2D rendering (main canvas may have WebGL context)
+    this.canvas = options.particleCanvas || options.canvas;
+    const ctx = this.canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Failed to get 2D context - canvas may already have WebGL context');
+    }
+    this.ctx = ctx;
     this.width = this.canvas.width;
     this.height = this.canvas.height;
 
