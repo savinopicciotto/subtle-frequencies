@@ -169,33 +169,41 @@ export class ChladniRenderer {
 
   /**
    * Update frequency and calculate mode numbers
+   * Physically accurate: octave frequencies produce same pattern at higher resolution
    */
   updateFrequency(frequency: number): void {
-    // Map frequency to mode numbers
-    // Lower frequencies = simpler patterns (lower n, m)
-    // Higher frequencies = more complex patterns (higher n, m)
+    // Physically accurate mapping:
+    // - Octaves (2x frequency) → same pattern with 2x more nodes
+    // - Based on real Chladni plate physics: f ∝ (m² + n²)
 
     const normalizedFreq = Math.max(20, Math.min(frequency, 20000));
-    const freqRatio = Math.log(normalizedFreq / 20) / Math.log(20000 / 20);
 
-    // Calculate target modes (1-8 range)
-    this.targetModeN = Math.floor(freqRatio * 6) + 2;
-    this.targetModeM = Math.floor(freqRatio * 5) + 1;
+    // Calculate octaves from a reference frequency (100 Hz)
+    // Every octave up adds ~1 to mode numbers (more nodal lines, same topology)
+    const octavesFrom100Hz = Math.log2(normalizedFreq / 100);
 
-    // Add some variation based on frequency
-    if (frequency < 300) {
-      this.targetModeN = 2;
-      this.targetModeM = 1;
-    } else if (frequency < 500) {
-      this.targetModeN = 3;
-      this.targetModeM = 2;
-    } else if (frequency < 800) {
-      this.targetModeN = 4;
-      this.targetModeM = 3;
-    } else {
-      // Higher frequencies get more complex
-      this.targetModeN = Math.min(8, Math.floor(frequency / 150));
-      this.targetModeM = Math.min(7, Math.floor(frequency / 180));
+    // Base mode complexity (starting pattern)
+    const baseN = 2;
+    const baseM = 2;
+
+    // Scale modes with octaves - preserves pattern topology across octaves
+    // floor() gives discrete mode changes at musical intervals
+    const octaveOffset = Math.floor(Math.max(0, octavesFrom100Hz));
+
+    // Add slight asymmetry for visual variety (N and M not identical)
+    this.targetModeN = baseN + octaveOffset;
+    this.targetModeM = baseM + Math.floor(octaveOffset * 0.8); // Slightly different scaling
+
+    // Clamp to reasonable range (1-10 modes)
+    this.targetModeN = Math.max(1, Math.min(10, this.targetModeN));
+    this.targetModeM = Math.max(1, Math.min(10, this.targetModeM));
+
+    // Add fine-tuning within octave (fractional modes for smooth transitions)
+    const fractionalOctave = octavesFrom100Hz - Math.floor(octavesFrom100Hz);
+    if (fractionalOctave > 0.7) {
+      // Close to next octave - blend toward next mode
+      this.targetModeN += 0.3;
+      this.targetModeM += 0.3;
     }
 
     // Update particle targets when modes change significantly
