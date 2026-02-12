@@ -24,10 +24,20 @@ export function FrequencyPlayer({
 }: FrequencyPlayerProps) {
   const [inputValue, setInputValue] = useState(frequency.toString());
 
+  // Logarithmic scaling for frequency slider (gives more precision in low range)
+  const MIN_FREQ = 20;
+  const MAX_FREQ = 20000;
+  const freqToSlider = (freq: number) => {
+    return (Math.log(freq / MIN_FREQ) / Math.log(MAX_FREQ / MIN_FREQ)) * 1000;
+  };
+  const sliderToFreq = (slider: number) => {
+    return MIN_FREQ * Math.pow(MAX_FREQ / MIN_FREQ, slider / 1000);
+  };
+
   const handleFrequencyInput = (value: string) => {
     setInputValue(value);
     const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue >= 20 && numValue <= 20000) {
+    if (!isNaN(numValue) && numValue >= MIN_FREQ && numValue <= MAX_FREQ) {
       onFrequencyChange(numValue);
     }
   };
@@ -48,20 +58,23 @@ export function FrequencyPlayer({
         </button>
       </div>
 
-      {/* Frequency Slider */}
+      {/* Frequency Slider (Logarithmic Scale) */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-300">
-          Frequency: {frequency.toFixed(0)} Hz
+          Frequency: {frequency.toFixed(1)} Hz
         </label>
         <input
           type="range"
-          min="20"
-          max="20000"
-          step="1"
-          value={frequency}
-          onChange={(e) => onFrequencyChange(parseFloat(e.target.value))}
+          min="0"
+          max="1000"
+          step="0.1"
+          value={freqToSlider(frequency)}
+          onChange={(e) => onFrequencyChange(sliderToFreq(parseFloat(e.target.value)))}
           className="slider"
         />
+        <div className="text-xs text-gray-500 text-center">
+          Logarithmic scale - more precision in low frequencies
+        </div>
       </div>
 
       {/* Numeric Input */}

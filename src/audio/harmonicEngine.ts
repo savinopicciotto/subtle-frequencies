@@ -53,7 +53,14 @@ export const PURE_RATIOS = {
 };
 
 export const HARMONIC_SERIES = [
+  // Subharmonics (below fundamental)
+  { ratio: 0.25, label: 'Subharmonic 1/4 (2 Octaves Down)' },
+  { ratio: 0.5, label: 'Subharmonic 1/2 (Octave Down)' },
+  { ratio: 0.75, label: 'Subharmonic 3/4 (Perfect 4th Down)' },
+
+  // Fundamental and harmonics
   { ratio: 1, label: 'Fundamental' },
+  { ratio: 1.5, label: '3/2 (Perfect 5th)' },
   { ratio: 2, label: '2nd Harmonic (Octave)' },
   { ratio: 3, label: '3rd Harmonic (Perfect 5th + Octave)' },
   { ratio: 4, label: '4th Harmonic (2 Octaves)' },
@@ -61,6 +68,9 @@ export const HARMONIC_SERIES = [
   { ratio: 6, label: '6th Harmonic' },
   { ratio: 7, label: '7th Harmonic (Natural 7th)' },
   { ratio: 8, label: '8th Harmonic (3 Octaves)' },
+  { ratio: 9, label: '9th Harmonic' },
+  { ratio: 12, label: '12th Harmonic' },
+  { ratio: 16, label: '16th Harmonic (4 Octaves)' },
 ];
 
 export class HarmonicEngine {
