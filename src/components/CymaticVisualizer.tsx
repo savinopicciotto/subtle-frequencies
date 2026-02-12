@@ -4,6 +4,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ChladniRenderer } from '../visualizer/chladniRenderer';
+import { WaveRenderer } from '../visualizer/waveRenderer';
+import { GeometryRenderer } from '../visualizer/geometryRenderer';
 import { audioEngine } from '../audio/AudioEngine';
 
 interface CymaticVisualizerProps {
@@ -20,7 +22,9 @@ export function CymaticVisualizer({
   const containerRef = useRef<HTMLDivElement>(null);
   const patternCanvasRef = useRef<HTMLCanvasElement>(null);
   const particleCanvasRef = useRef<HTMLCanvasElement>(null);
-  const rendererRef = useRef<ChladniRenderer | null>(null);
+  const chladniRendererRef = useRef<ChladniRenderer | null>(null);
+  const waveRendererRef = useRef<WaveRenderer | null>(null);
+  const geometryRendererRef = useRef<GeometryRenderer | null>(null);
   const animationRef = useRef<number | undefined>(undefined);
 
   const [mode, setMode] = useState<'cymatic' | 'wave' | 'geometry'>('cymatic');
@@ -52,7 +56,7 @@ export function CymaticVisualizer({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Initialize renderer
+  // Initialize renderers
   useEffect(() => {
     const patternCanvas = patternCanvasRef.current;
     const particleCanvas = particleCanvasRef.current;
@@ -66,44 +70,77 @@ export function CymaticVisualizer({
     particleCanvas.width = size;
     particleCanvas.height = size;
 
-    // Create renderer
-    rendererRef.current = new ChladniRenderer({
+    // Create all renderers
+    chladniRendererRef.current = new ChladniRenderer({
       canvas: patternCanvas,
       particleCanvas: particleCanvas,
       useWebGL: true,
       particleCount: 5000,
     });
 
-    // Set initial frequency
-    rendererRef.current.updateFrequency(frequency);
+    waveRendererRef.current = new WaveRenderer({
+      canvas: patternCanvas,
+      particleCanvas: particleCanvas,
+      sourceCount: 3,
+    });
+
+    geometryRendererRef.current = new GeometryRenderer({
+      canvas: patternCanvas,
+      particleCanvas: particleCanvas,
+    });
+
+    // Set initial frequency for all renderers
+    chladniRendererRef.current.updateFrequency(frequency);
+    waveRendererRef.current.updateFrequency(frequency);
+    geometryRendererRef.current.updateFrequency(frequency);
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      rendererRef.current?.destroy();
+      chladniRendererRef.current?.destroy();
+      waveRendererRef.current?.destroy();
+      geometryRendererRef.current?.destroy();
     };
   }, []);
 
-  // Update frequency
+  // Update frequency for all renderers
   useEffect(() => {
-    if (rendererRef.current) {
-      rendererRef.current.updateFrequency(frequency);
-    }
+    chladniRendererRef.current?.updateFrequency(frequency);
+    waveRendererRef.current?.updateFrequency(frequency);
+    geometryRendererRef.current?.updateFrequency(frequency);
   }, [frequency]);
 
   // Animation loop
   useEffect(() => {
     const animate = (timestamp: number) => {
-      if (rendererRef.current) {
-        // Get amplitude from audio engine
-        const amplitude = isPlaying && audioEngine.isReady()
-          ? audioEngine.getAmplitude()
-          : 0.3; // Default amplitude when not playing
+      // Get amplitude from audio engine
+      const amplitude = isPlaying && audioEngine.isReady()
+        ? audioEngine.getAmplitude()
+        : 0.3; // Default amplitude when not playing
 
-        rendererRef.current.setAmplitude(amplitude);
-        rendererRef.current.render(timestamp);
+      // Render based on current mode
+      switch (mode) {
+        case 'cymatic':
+          if (chladniRendererRef.current) {
+            chladniRendererRef.current.setAmplitude(amplitude);
+            chladniRendererRef.current.render(timestamp);
+          }
+          break;
+        case 'wave':
+          if (waveRendererRef.current) {
+            waveRendererRef.current.setAmplitude(amplitude);
+            waveRendererRef.current.render(timestamp);
+          }
+          break;
+        case 'geometry':
+          if (geometryRendererRef.current) {
+            geometryRendererRef.current.setAmplitude(amplitude);
+            geometryRendererRef.current.render(timestamp);
+          }
+          break;
       }
+
       animationRef.current = requestAnimationFrame(animate);
     };
 
@@ -114,15 +151,15 @@ export function CymaticVisualizer({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isPlaying]);
+  }, [isPlaying, mode]);
 
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       const size = Math.min(window.innerWidth - 40, 600);
-      if (rendererRef.current) {
-        rendererRef.current.resize(size, size);
-      }
+      chladniRendererRef.current?.resize(size, size);
+      waveRendererRef.current?.resize(size, size);
+      geometryRendererRef.current?.resize(size, size);
     };
 
     window.addEventListener('resize', handleResize);
@@ -231,22 +268,28 @@ export function CymaticVisualizer({
             </button>
             <button
               onClick={() => setMode('wave')}
-              disabled
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 opacity-50 cursor-not-allowed"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                mode === 'wave'
+                  ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-dark-base'
+                  : 'bg-white/10 hover:bg-white/20 border border-white/20'
+              }`}
             >
               Wave Interference
             </button>
             <button
               onClick={() => setMode('geometry')}
-              disabled
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 opacity-50 cursor-not-allowed"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                mode === 'geometry'
+                  ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-dark-base'
+                  : 'bg-white/10 hover:bg-white/20 border border-white/20'
+              }`}
             >
               Sacred Geometry
             </button>
           </div>
 
           <div className="text-center text-sm text-gray-500 mt-2">
-            More modes coming soon
+            Switch between visualization modes
           </div>
         </>
       )}
