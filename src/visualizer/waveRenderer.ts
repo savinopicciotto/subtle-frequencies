@@ -105,7 +105,8 @@ export class WaveRenderer {
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     // Calculate stride for performance (sample every N pixels)
-    const stride = 2;
+    // Use 1 for maximum definition
+    const stride = 1;
 
     // Create image data for direct pixel manipulation
     const imageData = this.ctx.createImageData(this.width, this.height);
@@ -116,9 +117,9 @@ export class WaveRenderer {
         // Calculate interference pattern
         const interference = this.calculateInterference(x, y, this.time);
 
-        // Map interference to color
+        // Map interference to color with enhanced contrast
         const intensity = (interference + 1) * 0.5; // Normalize to 0-1
-        const amplifiedIntensity = Math.pow(intensity, 1.5) * this.amplitude;
+        const amplifiedIntensity = Math.pow(intensity, 1.2) * this.amplitude;
 
         // Color gradient: deep blue -> cyan -> white
         let r, g, b;

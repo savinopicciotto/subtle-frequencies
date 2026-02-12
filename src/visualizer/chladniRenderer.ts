@@ -178,29 +178,30 @@ export class ChladniRenderer {
 
     const normalizedFreq = Math.max(20, Math.min(frequency, 20000));
 
-    // Calculate octaves from a lower reference (30 Hz) to keep low frequencies interesting
-    // Every octave up adds ~1 to mode numbers (more nodal lines, same topology)
-    const octavesFrom30Hz = Math.log2(normalizedFreq / 30);
+    // Calculate octaves from 100 Hz reference for elegant progression
+    const octavesFrom100Hz = Math.log2(normalizedFreq / 100);
 
-    // Base mode complexity (starting pattern at 30 Hz)
-    // Use higher base to ensure visible patterns even at lowest frequencies
-    const baseN = 3;
+    // Base mode complexity - elegant starting pattern
+    const baseN = 2;
     const baseM = 2;
 
+    // For very low frequencies (< 100 Hz), boost modes to stay visible
+    const isLowFreq = normalizedFreq < 100;
+    const lowFreqBoost = isLowFreq ? Math.floor(2 - octavesFrom100Hz) : 0;
+
     // Scale modes with octaves - preserves pattern topology across octaves
-    // floor() gives discrete mode changes at musical intervals
-    const octaveOffset = Math.floor(Math.max(0, octavesFrom30Hz));
+    const octaveOffset = Math.floor(Math.max(0, octavesFrom100Hz));
 
-    // Add slight asymmetry for visual variety (N and M not identical)
-    this.targetModeN = baseN + octaveOffset;
-    this.targetModeM = baseM + Math.floor(octaveOffset * 0.8); // Slightly different scaling
+    // Add slight asymmetry for visual variety
+    this.targetModeN = baseN + octaveOffset + lowFreqBoost;
+    this.targetModeM = baseM + Math.floor(octaveOffset * 0.8) + Math.floor(lowFreqBoost * 0.7);
 
-    // Clamp to reasonable range (2-12 modes for wider complexity range)
-    this.targetModeN = Math.max(2, Math.min(12, this.targetModeN));
-    this.targetModeM = Math.max(2, Math.min(12, this.targetModeM));
+    // Clamp to elegant range
+    this.targetModeN = Math.max(2, Math.min(10, this.targetModeN));
+    this.targetModeM = Math.max(2, Math.min(10, this.targetModeM));
 
     // Add fine-tuning within octave (fractional modes for smooth transitions)
-    const fractionalOctave = octavesFrom30Hz - Math.floor(octavesFrom30Hz);
+    const fractionalOctave = octavesFrom100Hz - Math.floor(octavesFrom100Hz);
     if (fractionalOctave > 0.7) {
       // Close to next octave - blend toward next mode
       this.targetModeN += 0.3;

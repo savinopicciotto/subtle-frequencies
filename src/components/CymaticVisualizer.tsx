@@ -12,12 +12,14 @@ interface CymaticVisualizerProps {
   isPlaying: boolean;
   frequency: number;
   onShareClick?: () => void;
+  harmonicLayers?: Array<{ ratio: number }>;
 }
 
 export function CymaticVisualizer({
   isPlaying,
   frequency,
   onShareClick,
+  harmonicLayers = [],
 }: CymaticVisualizerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const patternCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -146,6 +148,7 @@ export function CymaticVisualizer({
           particleCanvas: particleCanvas,
         });
         geometryRendererRef.current.updateFrequency(frequency);
+        geometryRendererRef.current.setHarmonicRatios(harmonicLayers.map(l => l.ratio));
         break;
     }
 
@@ -173,6 +176,13 @@ export function CymaticVisualizer({
         break;
     }
   }, [frequency, mode]);
+
+  // Update harmonic ratios for geometry renderer
+  useEffect(() => {
+    if (mode === 'geometry' && geometryRendererRef.current) {
+      geometryRendererRef.current.setHarmonicRatios(harmonicLayers.map(l => l.ratio));
+    }
+  }, [harmonicLayers, mode]);
 
   // Animation loop
   useEffect(() => {

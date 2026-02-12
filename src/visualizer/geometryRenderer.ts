@@ -16,6 +16,7 @@ export class GeometryRenderer {
   private frequency: number = 432;
   private amplitude: number = 0.5;
   private time: number = 0;
+  private harmonicRatios: number[] = []; // Active harmonic ratios from audio
 
   constructor(options: GeometryRendererOptions) {
     // Use particleCanvas for 2D rendering (main canvas may have WebGL context)
@@ -41,6 +42,13 @@ export class GeometryRenderer {
    */
   setAmplitude(amplitude: number): void {
     this.amplitude = amplitude;
+  }
+
+  /**
+   * Update harmonic ratios to visualize
+   */
+  setHarmonicRatios(ratios: number[]): void {
+    this.harmonicRatios = ratios;
   }
 
   /**
@@ -141,59 +149,6 @@ export class GeometryRenderer {
   }
 
   /**
-   * Draw Sri Yantra (simplified version)
-   */
-  private drawSriYantra(centerX: number, centerY: number, radius: number, alpha: number, rotation: number): void {
-    this.ctx.save();
-    this.ctx.translate(centerX, centerY);
-    this.ctx.rotate(rotation);
-
-    // Upward pointing triangles (Shiva)
-    this.ctx.strokeStyle = `rgba(255, 100, 100, ${alpha})`;
-    this.ctx.lineWidth = 2;
-
-    for (let i = 0; i < 4; i++) {
-      const scale = 1 - i * 0.2;
-      const r = radius * scale;
-      const h = r * Math.sqrt(3) / 2;
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, -h * 0.667);
-      this.ctx.lineTo(-r / 2, h * 0.333);
-      this.ctx.lineTo(r / 2, h * 0.333);
-      this.ctx.closePath();
-      this.ctx.stroke();
-    }
-
-    // Downward pointing triangles (Shakti)
-    this.ctx.strokeStyle = `rgba(100, 150, 255, ${alpha})`;
-
-    for (let i = 0; i < 5; i++) {
-      const scale = 0.9 - i * 0.18;
-      const r = radius * scale;
-      const h = r * Math.sqrt(3) / 2;
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, h * 0.667);
-      this.ctx.lineTo(-r / 2, -h * 0.333);
-      this.ctx.lineTo(r / 2, -h * 0.333);
-      this.ctx.closePath();
-      this.ctx.stroke();
-    }
-
-    this.ctx.restore();
-
-    // Outer circles
-    this.ctx.strokeStyle = `rgba(218, 165, 32, ${alpha})`;
-    this.ctx.lineWidth = 2;
-    for (let i = 0; i < 3; i++) {
-      this.ctx.beginPath();
-      this.ctx.arc(centerX, centerY, radius * (1 + i * 0.1), 0, Math.PI * 2);
-      this.ctx.stroke();
-    }
-  }
-
-  /**
    * Draw Fibonacci Spiral
    */
   private drawFibonacciSpiral(centerX: number, centerY: number, scale: number, alpha: number, rotation: number): void {
@@ -266,7 +221,34 @@ export class GeometryRenderer {
   }
 
   /**
-   * Render frame
+   * Detect mathematical patterns in harmonic ratios
+   */
+  private detectPattern(): 'phi' | 'fibonacci' | 'sacred' | 'generic' {
+    const ratios = this.harmonicRatios;
+    if (ratios.length === 0) return 'generic';
+
+    // Check for golden ratio (φ ≈ 1.618, φ² ≈ 2.618, φ³ ≈ 4.236)
+    const hasPhi = ratios.some(r => Math.abs(r - 1.618) < 0.01 || Math.abs(r - 2.618) < 0.01);
+    if (hasPhi) return 'phi';
+
+    // Check for Fibonacci (1, 2, 3, 5, 8, 13...)
+    const fibNumbers = [1, 2, 3, 5, 8, 13];
+    const isFib = ratios.filter(r => fibNumbers.some(f => Math.abs(r - f) < 0.1)).length >= 3;
+    if (isFib) return 'fibonacci';
+
+    // Check for sacred geometry constants (√2, √3, √5)
+    const hasSacred = ratios.some(r =>
+      Math.abs(r - 1.414) < 0.01 || // √2
+      Math.abs(r - 1.732) < 0.01 || // √3
+      Math.abs(r - 2.236) < 0.01    // √5
+    );
+    if (hasSacred) return 'sacred';
+
+    return 'generic';
+  }
+
+  /**
+   * Render frame - adapts to active harmonic ratios
    */
   render(timestamp: number): void {
     this.time = timestamp * 0.001;
@@ -280,37 +262,78 @@ export class GeometryRenderer {
     const baseRadius = Math.min(this.width, this.height) * 0.15;
 
     // Animate based on frequency and amplitude
-    const freqFactor = this.frequency / 432; // Normalize to 432 Hz
+    const freqFactor = this.frequency / 432;
     const pulse = Math.sin(this.time * 2) * 0.1 + 0.9;
     const rotation = this.time * 0.2 * freqFactor;
 
-    // Layer 1: Rotating Flower of Life (background)
-    this.ctx.save();
-    this.ctx.translate(centerX, centerY);
-    this.ctx.rotate(rotation * 0.3);
-    this.ctx.translate(-centerX, -centerY);
-    this.drawFlowerOfLife(centerX, centerY, baseRadius * 0.8 * pulse, 0.2 * this.amplitude);
-    this.ctx.restore();
+    // Detect pattern type from active harmonics
+    const pattern = this.detectPattern();
 
-    // Layer 2: Metatron's Cube (middle)
-    this.ctx.save();
-    this.ctx.translate(centerX, centerY);
-    this.ctx.rotate(-rotation * 0.5);
-    this.ctx.translate(-centerX, -centerY);
-    this.drawMetatronsCube(centerX, centerY, baseRadius * 1.2 * pulse, 0.4 * this.amplitude);
-    this.ctx.restore();
+    if (pattern === 'phi') {
+      // Golden Ratio Visualization
+      // Draw multiple golden spirals at φ ratios
+      const phiRatios = this.harmonicRatios.filter(r => r >= 1.4 && r <= 7);
+      phiRatios.forEach((ratio, i) => {
+        const angle = (i / phiRatios.length) * Math.PI * 2 + rotation;
+        const distance = baseRadius * ratio * 0.5;
+        const spiralX = centerX + Math.cos(angle) * distance;
+        const spiralY = centerY + Math.sin(angle) * distance;
+        this.drawFibonacciSpiral(spiralX, spiralY, 2.5 * ratio / 3, 0.4 * this.amplitude, angle);
+      });
 
-    // Layer 3: Sri Yantra (center)
-    this.drawSriYantra(centerX, centerY, baseRadius * pulse, 0.6 * this.amplitude, rotation);
+      // Central golden rectangle cascade
+      for (let i = 0; i < 5; i++) {
+        const scale = Math.pow(1.618, i) * baseRadius * 0.15;
+        const alpha = (0.6 - i * 0.1) * this.amplitude;
+        this.ctx.strokeStyle = `rgba(218, 165, 32, ${alpha})`;
+        this.ctx.lineWidth = 2;
+        this.ctx.save();
+        this.ctx.translate(centerX, centerY);
+        this.ctx.rotate(rotation + i * 0.3);
+        this.ctx.strokeRect(-scale, -scale * 0.618, scale * 2, scale * 1.236);
+        this.ctx.restore();
+      }
+    } else if (pattern === 'fibonacci') {
+      // Fibonacci Sequence Visualization
+      // Draw Fibonacci spiral from center
+      this.drawFibonacciSpiral(centerX, centerY, 3, 0.7 * this.amplitude, rotation);
 
-    // Layer 4: Fibonacci Spirals (dynamic)
-    const spiralCount = 4;
-    for (let i = 0; i < spiralCount; i++) {
-      const angle = (i / spiralCount) * Math.PI * 2 + rotation * 2;
-      const distance = baseRadius * 2;
-      const spiralX = centerX + Math.cos(angle) * distance;
-      const spiralY = centerY + Math.sin(angle) * distance;
-      this.drawFibonacciSpiral(spiralX, spiralY, 2, 0.3 * this.amplitude, angle);
+      // Draw circles at Fibonacci distances
+      const fibSequence = [1, 2, 3, 5, 8];
+      fibSequence.forEach((fib) => {
+        if (this.harmonicRatios.some(r => Math.abs(r - fib) < 0.2)) {
+          const radius = baseRadius * fib * 0.3 * pulse;
+          const alpha = 0.3 * this.amplitude;
+          this.ctx.strokeStyle = `rgba(218, 165, 32, ${alpha})`;
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+      });
+    } else if (pattern === 'sacred') {
+      // Sacred Geometry (√2, √3, √5)
+      this.drawFlowerOfLife(centerX, centerY, baseRadius * pulse, 0.5 * this.amplitude);
+
+      this.ctx.save();
+      this.ctx.translate(centerX, centerY);
+      this.ctx.rotate(rotation);
+      this.ctx.translate(-centerX, -centerY);
+      this.drawMetatronsCube(centerX, centerY, baseRadius * 1.3 * pulse, 0.6 * this.amplitude);
+      this.ctx.restore();
+    } else {
+      // Generic: Draw circles at each harmonic ratio distance
+      this.harmonicRatios.forEach((ratio, i) => {
+        if (ratio < 1) return; // Skip subharmonics for clarity
+        const radius = baseRadius * ratio * 0.4 * pulse;
+        const hue = (i * 40 + this.time * 20) % 360;
+        const alpha = 0.5 * this.amplitude;
+        this.ctx.strokeStyle = `hsla(${hue}, 70%, 60%, ${alpha})`;
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, Math.min(radius, this.width * 0.45), 0, Math.PI * 2);
+        this.ctx.stroke();
+      });
     }
 
     // Central glow pulse

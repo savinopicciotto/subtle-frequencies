@@ -387,7 +387,12 @@ function App() {
         </header>
 
         {/* Cymatic Visualizer */}
-        <CymaticVisualizer isPlaying={isPlaying} frequency={frequency} onShareClick={handleExportClick} />
+        <CymaticVisualizer
+          isPlaying={isPlaying}
+          frequency={frequency}
+          onShareClick={handleExportClick}
+          harmonicLayers={harmonicLayers}
+        />
 
         {/* Main Controls */}
         <FrequencyPlayer
