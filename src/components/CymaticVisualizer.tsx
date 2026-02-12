@@ -56,7 +56,7 @@ export function CymaticVisualizer({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Initialize renderers
+  // Initialize/switch renderer based on mode
   useEffect(() => {
     const patternCanvas = patternCanvasRef.current;
     const particleCanvas = particleCanvasRef.current;
@@ -70,29 +70,41 @@ export function CymaticVisualizer({
     particleCanvas.width = size;
     particleCanvas.height = size;
 
-    // Create all renderers
-    chladniRendererRef.current = new ChladniRenderer({
-      canvas: patternCanvas,
-      particleCanvas: particleCanvas,
-      useWebGL: true,
-      particleCount: 5000,
-    });
+    // Destroy all existing renderers
+    chladniRendererRef.current?.destroy();
+    waveRendererRef.current?.destroy();
+    geometryRendererRef.current?.destroy();
+    chladniRendererRef.current = null;
+    waveRendererRef.current = null;
+    geometryRendererRef.current = null;
 
-    waveRendererRef.current = new WaveRenderer({
-      canvas: patternCanvas,
-      particleCanvas: particleCanvas,
-      sourceCount: 3,
-    });
-
-    geometryRendererRef.current = new GeometryRenderer({
-      canvas: patternCanvas,
-      particleCanvas: particleCanvas,
-    });
-
-    // Set initial frequency for all renderers
-    chladniRendererRef.current.updateFrequency(frequency);
-    waveRendererRef.current.updateFrequency(frequency);
-    geometryRendererRef.current.updateFrequency(frequency);
+    // Create only the renderer for current mode
+    switch (mode) {
+      case 'cymatic':
+        chladniRendererRef.current = new ChladniRenderer({
+          canvas: patternCanvas,
+          particleCanvas: particleCanvas,
+          useWebGL: true,
+          particleCount: 5000,
+        });
+        chladniRendererRef.current.updateFrequency(frequency);
+        break;
+      case 'wave':
+        waveRendererRef.current = new WaveRenderer({
+          canvas: patternCanvas,
+          particleCanvas: particleCanvas,
+          sourceCount: 3,
+        });
+        waveRendererRef.current.updateFrequency(frequency);
+        break;
+      case 'geometry':
+        geometryRendererRef.current = new GeometryRenderer({
+          canvas: patternCanvas,
+          particleCanvas: particleCanvas,
+        });
+        geometryRendererRef.current.updateFrequency(frequency);
+        break;
+    }
 
     return () => {
       if (animationRef.current) {
@@ -102,14 +114,22 @@ export function CymaticVisualizer({
       waveRendererRef.current?.destroy();
       geometryRendererRef.current?.destroy();
     };
-  }, []);
+  }, [mode]);
 
-  // Update frequency for all renderers
+  // Update frequency for active renderer
   useEffect(() => {
-    chladniRendererRef.current?.updateFrequency(frequency);
-    waveRendererRef.current?.updateFrequency(frequency);
-    geometryRendererRef.current?.updateFrequency(frequency);
-  }, [frequency]);
+    switch (mode) {
+      case 'cymatic':
+        chladniRendererRef.current?.updateFrequency(frequency);
+        break;
+      case 'wave':
+        waveRendererRef.current?.updateFrequency(frequency);
+        break;
+      case 'geometry':
+        geometryRendererRef.current?.updateFrequency(frequency);
+        break;
+    }
+  }, [frequency, mode]);
 
   // Animation loop
   useEffect(() => {
@@ -157,14 +177,22 @@ export function CymaticVisualizer({
   useEffect(() => {
     const handleResize = () => {
       const size = Math.min(window.innerWidth - 40, 600);
-      chladniRendererRef.current?.resize(size, size);
-      waveRendererRef.current?.resize(size, size);
-      geometryRendererRef.current?.resize(size, size);
+      switch (mode) {
+        case 'cymatic':
+          chladniRendererRef.current?.resize(size, size);
+          break;
+        case 'wave':
+          waveRendererRef.current?.resize(size, size);
+          break;
+        case 'geometry':
+          geometryRendererRef.current?.resize(size, size);
+          break;
+      }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [mode]);
 
   return (
     <div ref={containerRef} className="relative mb-8">
