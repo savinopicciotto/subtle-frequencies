@@ -1,0 +1,22 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#0a0a0f"/>
+  <circle cx="256" cy="256" r="160" fill="url(#gradient)" opacity="0.8"/>
+  <circle cx="256" cy="256" r="120" fill="url(#gradient2)" opacity="0.6"/>
+  <circle cx="256" cy="256" r="80" fill="url(#gradient3)" opacity="0.4"/>
+  <circle cx="256" cy="256" r="40" fill="#FFD700" opacity="0.9"/>
+
+  <defs>
+    <radialGradient id="gradient">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FFBF69" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gradient2">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#FFBF69" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gradient3">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FFBF69" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>

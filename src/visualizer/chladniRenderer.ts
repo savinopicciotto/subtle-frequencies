@@ -1,0 +1,361 @@
+/**
+ * Chladni pattern renderer using WebGL
+ * Renders cymatic patterns based on frequency with particle overlay
+ */
+
+import { ParticleSystem } from './particleSystem';
+import vertexShaderSource from './shaders/chladni.vert.glsl?raw';
+import fragmentShaderSource from './shaders/chladni.frag.glsl?raw';
+
+interface ChladniRendererOptions {
+  canvas: HTMLCanvasElement;
+  particleCanvas: HTMLCanvasElement;
+  useWebGL?: boolean;
+  particleCount?: number;
+}
+
+export class ChladniRenderer {
+  private canvas: HTMLCanvasElement;
+  private particleCanvas: HTMLCanvasElement;
+  private gl: WebGLRenderingContext | null = null;
+  private ctx2d: CanvasRenderingContext2D | null = null;
+  private particleSystem: ParticleSystem;
+
+  private program: WebGLProgram | null = null;
+  private positionBuffer: WebGLBuffer | null = null;
+
+  // Uniforms
+  private u_modeN: WebGLUniformLocation | null = null;
+  private u_modeM: WebGLUniformLocation | null = null;
+  private u_time: WebGLUniformLocation | null = null;
+  private u_amplitude: WebGLUniformLocation | null = null;
+  private u_color: WebGLUniformLocation | null = null;
+
+  // Current state
+  private currentModeN = 3;
+  private currentModeM = 2;
+  private targetModeN = 3;
+  private targetModeM = 2;
+  private time = 0;
+  private amplitude = 0.5;
+  private lastFrameTime = 0;
+
+  constructor(options: ChladniRendererOptions) {
+    this.canvas = options.canvas;
+    this.particleCanvas = options.particleCanvas;
+
+    // Initialize WebGL or fallback to 2D
+    if (options.useWebGL !== false) {
+      this.gl = (this.canvas.getContext('webgl') as WebGLRenderingContext) ||
+                (this.canvas.getContext('experimental-webgl') as WebGLRenderingContext);
+    }
+
+    if (!this.gl) {
+      console.warn('WebGL not available, falling back to 2D canvas');
+      this.ctx2d = this.canvas.getContext('2d');
+    }
+
+    // Initialize particle system
+    this.particleSystem = new ParticleSystem(
+      this.particleCanvas,
+      options.particleCount || 5000
+    );
+
+    // Setup renderer
+    if (this.gl) {
+      this.setupWebGL();
+    }
+  }
+
+  /**
+   * Setup WebGL shaders and buffers
+   */
+  private setupWebGL(): void {
+    const gl = this.gl;
+    if (!gl) return;
+
+    // Create shaders
+    const vertexShader = this.createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = this.createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+    if (!vertexShader || !fragmentShader) {
+      console.error('Failed to create shaders');
+      return;
+    }
+
+    // Create program
+    this.program = this.createProgram(gl, vertexShader, fragmentShader);
+    if (!this.program) {
+      console.error('Failed to create program');
+      return;
+    }
+
+    // Get attribute and uniform locations
+    const positionLocation = gl.getAttribLocation(this.program, 'a_position');
+    this.u_modeN = gl.getUniformLocation(this.program, 'u_modeN');
+    this.u_modeM = gl.getUniformLocation(this.program, 'u_modeM');
+    this.u_time = gl.getUniformLocation(this.program, 'u_time');
+    this.u_amplitude = gl.getUniformLocation(this.program, 'u_amplitude');
+    this.u_color = gl.getUniformLocation(this.program, 'u_color');
+
+    // Create position buffer (full-screen quad)
+    this.positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+    const positions = new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1,
+    ]);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+    // Setup attribute
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+    // Enable blending
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  }
+
+  /**
+   * Create and compile shader
+   */
+  private createShader(
+    gl: WebGLRenderingContext,
+    type: number,
+    source: string
+  ): WebGLShader | null {
+    const shader = gl.createShader(type);
+    if (!shader) return null;
+
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
+    }
+
+    return shader;
+  }
+
+  /**
+   * Create and link program
+   */
+  private createProgram(
+    gl: WebGLRenderingContext,
+    vertexShader: WebGLShader,
+    fragmentShader: WebGLShader
+  ): WebGLProgram | null {
+    const program = gl.createProgram();
+    if (!program) return null;
+
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Program link error:', gl.getProgramInfoLog(program));
+      gl.deleteProgram(program);
+      return null;
+    }
+
+    return program;
+  }
+
+  /**
+   * Update frequency and calculate mode numbers
+   */
+  updateFrequency(frequency: number): void {
+    // Map frequency to mode numbers
+    // Lower frequencies = simpler patterns (lower n, m)
+    // Higher frequencies = more complex patterns (higher n, m)
+
+    const normalizedFreq = Math.max(20, Math.min(frequency, 20000));
+    const freqRatio = Math.log(normalizedFreq / 20) / Math.log(20000 / 20);
+
+    // Calculate target modes (1-8 range)
+    this.targetModeN = Math.floor(freqRatio * 6) + 2;
+    this.targetModeM = Math.floor(freqRatio * 5) + 1;
+
+    // Add some variation based on frequency
+    if (frequency < 300) {
+      this.targetModeN = 2;
+      this.targetModeM = 1;
+    } else if (frequency < 500) {
+      this.targetModeN = 3;
+      this.targetModeM = 2;
+    } else if (frequency < 800) {
+      this.targetModeN = 4;
+      this.targetModeM = 3;
+    } else {
+      // Higher frequencies get more complex
+      this.targetModeN = Math.min(8, Math.floor(frequency / 150));
+      this.targetModeM = Math.min(7, Math.floor(frequency / 180));
+    }
+
+    // Update particle targets when modes change significantly
+    if (
+      Math.abs(this.targetModeN - this.currentModeN) > 0.5 ||
+      Math.abs(this.targetModeM - this.currentModeM) > 0.5
+    ) {
+      this.particleSystem.updateTargets(this.targetModeN, this.targetModeM);
+    }
+  }
+
+  /**
+   * Set amplitude for audio reactivity
+   */
+  setAmplitude(amplitude: number): void {
+    this.amplitude = Math.max(0, Math.min(1, amplitude));
+  }
+
+  /**
+   * Render frame
+   */
+  render(currentTime: number = 0): void {
+    const deltaTime = this.lastFrameTime ? (currentTime - this.lastFrameTime) / 1000 : 0.016;
+    this.lastFrameTime = currentTime;
+
+    this.time += deltaTime;
+
+    // Smooth lerp mode transitions
+    const lerpSpeed = deltaTime * 2;
+    this.currentModeN += (this.targetModeN - this.currentModeN) * lerpSpeed;
+    this.currentModeM += (this.targetModeM - this.currentModeM) * lerpSpeed;
+
+    // Get color based on frequency (warm to cool)
+    const color = this.getFrequencyColor();
+
+    if (this.gl && this.program) {
+      this.renderWebGL(color);
+    } else if (this.ctx2d) {
+      this.render2D(color);
+    }
+
+    // Update and render particles
+    this.particleSystem.update(deltaTime, this.amplitude, this.time);
+    this.particleSystem.render(color, this.amplitude);
+  }
+
+  /**
+   * Render using WebGL
+   */
+  private renderWebGL(color: { r: number; g: number; b: number }): void {
+    const gl = this.gl;
+    if (!gl || !this.program) return;
+
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    gl.clearColor(0.04, 0.04, 0.06, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(this.program);
+
+    // Set uniforms
+    gl.uniform1f(this.u_modeN, this.currentModeN);
+    gl.uniform1f(this.u_modeM, this.currentModeM);
+    gl.uniform1f(this.u_time, this.time);
+    gl.uniform1f(this.u_amplitude, this.amplitude);
+    gl.uniform3f(this.u_color, color.r / 255, color.g / 255, color.b / 255);
+
+    // Draw
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  /**
+   * Render using 2D canvas (fallback)
+   */
+  private render2D(color: { r: number; g: number; b: number }): void {
+    const ctx = this.ctx2d;
+    if (!ctx) return;
+
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+
+    ctx.fillStyle = '#0a0a0f';
+    ctx.fillRect(0, 0, width, height);
+
+    // Simple 2D Chladni pattern approximation
+    const imageData = ctx.createImageData(width, height);
+    const data = imageData.data;
+
+    for (let y = 0; y < height; y += 2) {
+      for (let x = 0; x < width; x += 2) {
+        const normX = (x / width - 0.5) * 2;
+        const normY = (y / height - 0.5) * 2;
+
+        const chladni =
+          Math.cos(this.currentModeN * Math.PI * normX) *
+            Math.cos(this.currentModeM * Math.PI * normY) -
+          Math.cos(this.currentModeM * Math.PI * normX) *
+            Math.cos(this.currentModeN * Math.PI * normY);
+
+        const intensity = Math.abs(chladni) < 0.1 ? 255 : 0;
+        const idx = (y * width + x) * 4;
+
+        data[idx] = color.r;
+        data[idx + 1] = color.g;
+        data[idx + 2] = color.b;
+        data[idx + 3] = intensity * this.amplitude;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+  /**
+   * Get color based on current mode (frequency mapping)
+   */
+  private getFrequencyColor(): { r: number; g: number; b: number } {
+    // Map from warm (low freq) to cool (high freq)
+    const t = (this.currentModeN + this.currentModeM) / 16; // 0-1 range
+
+    // Warm amber/gold (low frequencies)
+    const warmR = 212;
+    const warmG = 175;
+    const warmB = 55;
+
+    // Cool silver/blue-white (high frequencies)
+    const coolR = 200;
+    const coolG = 220;
+    const coolB = 255;
+
+    return {
+      r: Math.floor(warmR + (coolR - warmR) * t),
+      g: Math.floor(warmG + (coolG - warmG) * t),
+      b: Math.floor(warmB + (coolB - warmB) * t),
+    };
+  }
+
+  /**
+   * Resize canvases
+   */
+  resize(width: number, height: number): void {
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.particleCanvas.width = width;
+    this.particleCanvas.height = height;
+
+    if (this.gl) {
+      this.gl.viewport(0, 0, width, height);
+    }
+
+    this.particleSystem.resize(width, height);
+  }
+
+  /**
+   * Cleanup
+   */
+  destroy(): void {
+    if (this.gl && this.program) {
+      this.gl.deleteProgram(this.program);
+    }
+    if (this.gl && this.positionBuffer) {
+      this.gl.deleteBuffer(this.positionBuffer);
+    }
+  }
+}

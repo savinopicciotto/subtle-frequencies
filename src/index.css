@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Cormorant+Garamond:wght@300;400;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  body {
+    @apply bg-dark-base text-gray-100 font-sans antialiased;
+    @apply min-h-screen overflow-x-hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md rounded-2xl border border-white/10;
+    @apply shadow-2xl shadow-black/50;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 rounded-xl font-medium;
+    @apply bg-gradient-to-r from-accent-gold to-accent-amber;
+    @apply text-dark-base hover:shadow-lg hover:shadow-accent-gold/30;
+    @apply active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-xl font-medium;
+    @apply bg-white/10 hover:bg-white/20;
+    @apply border border-white/20;
+  }
+
+  .slider {
+    @apply w-full h-2 rounded-full appearance-none cursor-pointer;
+    @apply bg-white/10;
+  }
+
+  .slider::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-full;
+    @apply bg-gradient-to-r from-accent-gold to-accent-amber;
+    @apply shadow-lg shadow-accent-gold/50;
+  }
+
+  .slider::-moz-range-thumb {
+    @apply w-4 h-4 rounded-full border-0;
+    @apply bg-gradient-to-r from-accent-gold to-accent-amber;
+    @apply shadow-lg shadow-accent-gold/50;
+  }
+}
