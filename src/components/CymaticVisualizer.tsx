@@ -56,6 +56,35 @@ export function CymaticVisualizer({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Keyboard shortcuts for presentations
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key) {
+        case '1':
+          setMode('cymatic');
+          break;
+        case '2':
+          setMode('wave');
+          break;
+        case '3':
+          setMode('geometry');
+          break;
+        case 'f':
+        case 'F':
+          handleFullscreenToggle();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isFullscreen]);
+
   // Initialize/switch renderer based on mode
   useEffect(() => {
     const patternCanvas = patternCanvasRef.current;
@@ -63,8 +92,10 @@ export function CymaticVisualizer({
 
     if (!patternCanvas || !particleCanvas) return;
 
-    // Set canvas size
-    const size = Math.min(window.innerWidth - 40, 600);
+    // Set canvas size - use full screen in fullscreen mode for projectors
+    const size = isFullscreen
+      ? Math.min(window.innerWidth, window.innerHeight)
+      : Math.min(window.innerWidth - 40, 600);
     patternCanvas.width = size;
     patternCanvas.height = size;
     particleCanvas.width = size;
@@ -114,7 +145,7 @@ export function CymaticVisualizer({
       waveRendererRef.current?.destroy();
       geometryRendererRef.current?.destroy();
     };
-  }, [mode]);
+  }, [mode, isFullscreen]);
 
   // Update frequency for active renderer
   useEffect(() => {
@@ -176,7 +207,9 @@ export function CymaticVisualizer({
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      const size = Math.min(window.innerWidth - 40, 600);
+      const size = isFullscreen
+        ? Math.min(window.innerWidth, window.innerHeight)
+        : Math.min(window.innerWidth - 40, 600);
       switch (mode) {
         case 'cymatic':
           chladniRendererRef.current?.resize(size, size);
@@ -192,7 +225,7 @@ export function CymaticVisualizer({
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [mode]);
+  }, [mode, isFullscreen]);
 
   return (
     <div ref={containerRef} className="relative mb-8">
