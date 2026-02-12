@@ -15,6 +15,7 @@ import { AmbientTexture } from './components/AmbientTexture';
 import { SessionTimer } from './components/SessionTimer';
 import { PresetManager } from './components/PresetManager';
 import { HarmonicLayers } from './components/HarmonicLayers';
+import { ExportModal } from './components/ExportModal';
 import type { Preset } from './utils/presets';
 import type { BrainwaveState } from './audio/binauralEngine';
 import type { TextureType } from './audio/textureEngine';
@@ -43,6 +44,7 @@ function App() {
   const [harmonicLayers, setHarmonicLayers] = useState<
     Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect; label: string }>
   >([]);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Initialize audio on user gesture
   const handleStart = async () => {
@@ -109,56 +111,9 @@ function App() {
     }
   };
 
-  // Handle share visualization
-  const handleShare = async () => {
-    try {
-      // Find the visualizer canvases
-      const canvases = document.querySelectorAll('canvas');
-      if (canvases.length === 0) {
-        alert('No visualization to share');
-        return;
-      }
-
-      // Create a temporary canvas to composite both layers
-      const tempCanvas = document.createElement('canvas');
-      const firstCanvas = canvases[0];
-      tempCanvas.width = firstCanvas.width;
-      tempCanvas.height = firstCanvas.height;
-      const ctx = tempCanvas.getContext('2d');
-      if (!ctx) return;
-
-      // Draw both canvases (pattern + particles)
-      canvases.forEach((canvas) => {
-        ctx.drawImage(canvas, 0, 0);
-      });
-
-      // Convert to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        tempCanvas.toBlob((b) => resolve(b!), 'image/png');
-      });
-
-      const filename = `subtle-frequencies-${frequency}Hz-${Date.now()}.png`;
-
-      // Try Web Share API first (mobile-friendly)
-      if (navigator.share && navigator.canShare?.({ files: [new File([blob], filename, { type: 'image/png' })] })) {
-        await navigator.share({
-          files: [new File([blob], filename, { type: 'image/png' })],
-          title: 'Subtle Frequencies Visualization',
-          text: `${frequency} Hz cymatic pattern`,
-        });
-      } else {
-        // Fallback: Download
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        link.click();
-        URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error('Failed to share:', error);
-      alert('Failed to share visualization. Please try again.');
-    }
+  // Handle export modal
+  const handleExportClick = () => {
+    setShowExportModal(true);
   };
 
   // Update binaural enabled
@@ -432,7 +387,7 @@ function App() {
         </header>
 
         {/* Cymatic Visualizer */}
-        <CymaticVisualizer isPlaying={isPlaying} frequency={frequency} onShareClick={handleShare} />
+        <CymaticVisualizer isPlaying={isPlaying} frequency={frequency} onShareClick={handleExportClick} />
 
         {/* Main Controls */}
         <FrequencyPlayer
@@ -496,6 +451,14 @@ function App() {
           <p>© 2026 Subtle Frequencies. Premium healing sound therapy.</p>
         </footer>
       </div>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        frequency={frequency}
+        isPlaying={isPlaying}
+      />
     </div>
   );
 }
