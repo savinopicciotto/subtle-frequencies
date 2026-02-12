@@ -178,30 +178,28 @@ export class ChladniRenderer {
 
     const normalizedFreq = Math.max(20, Math.min(frequency, 20000));
 
-    // Calculate octaves from 100 Hz reference for elegant progression
-    const octavesFrom100Hz = Math.log2(normalizedFreq / 100);
+    // Calculate octaves from 200 Hz reference
+    // This ensures 100 Hz = -1 octave → mode 2, staying simple and elegant
+    const octavesFrom200Hz = Math.log2(normalizedFreq / 200);
 
-    // Base mode complexity - elegant starting pattern
-    const baseN = 2;
-    const baseM = 2;
+    // Base mode complexity at 200 Hz
+    const baseN = 3;
+    const baseM = 3;
 
-    // For very low frequencies (< 100 Hz), boost modes to stay visible
-    const isLowFreq = normalizedFreq < 100;
-    const lowFreqBoost = isLowFreq ? Math.floor(2 - octavesFrom100Hz) : 0;
-
-    // Scale modes with octaves - preserves pattern topology across octaves
-    const octaveOffset = Math.floor(Math.max(0, octavesFrom100Hz));
-
-    // Add slight asymmetry for visual variety
-    this.targetModeN = baseN + octaveOffset + lowFreqBoost;
-    this.targetModeM = baseM + Math.floor(octaveOffset * 0.8) + Math.floor(lowFreqBoost * 0.7);
+    // Add octave offset (continuous, allowing negatives for low frequencies)
+    // At 100 Hz (-1 octave): ~2,2
+    // At 200 Hz (0 octave): 3,3
+    // At 400 Hz (+1 octave): 4,3
+    // At 800 Hz (+2 octave): 5,4
+    const modeN = baseN + octavesFrom200Hz;
+    const modeM = baseM + octavesFrom200Hz * 0.8; // Slight asymmetry
 
     // Clamp to elegant range
-    this.targetModeN = Math.max(2, Math.min(10, this.targetModeN));
-    this.targetModeM = Math.max(2, Math.min(10, this.targetModeM));
+    this.targetModeN = Math.max(2, Math.min(8, Math.round(modeN)));
+    this.targetModeM = Math.max(2, Math.min(8, Math.round(modeM)));
 
     // Add fine-tuning within octave (fractional modes for smooth transitions)
-    const fractionalOctave = octavesFrom100Hz - Math.floor(octavesFrom100Hz);
+    const fractionalOctave = octavesFrom200Hz - Math.floor(octavesFrom200Hz);
     if (fractionalOctave > 0.7) {
       // Close to next octave - blend toward next mode
       this.targetModeN += 0.3;
