@@ -73,42 +73,26 @@ interface SacredCircle {
   birth: number;
 }
 
-// Build the Flower of Life circle order — each one "born" from intersections of previous
+// Build the Flower of Life circle positions
+// SYMMETRY CONSTRAINT: entire rings appear simultaneously to maintain rotational symmetry
 function buildCircleOrder(): SacredCircle[] {
   const circles: SacredCircle[] = [];
 
-  // Gen 0: Center circle (Root — the seed)
+  // Ring 0: Center circle (the seed)
   circles.push({ dx: 0, dy: 0, birth: 0 });
 
-  // Gen 1: Ring 1 circles appear sequentially around center
-  // This creates the Seed of Life (7 circles total)
-  // Each appears at intersection points of existing circles
-  for (let i = 0; i < 6; i++) {
-    const angle = (i / 6) * Math.PI * 2 - Math.PI / 2; // start from top
-    circles.push({
-      dx: Math.cos(angle),
-      dy: Math.sin(angle),
-      birth: 0.5 + i * 0.35, // 0.5, 0.85, 1.2, 1.55, 1.9, 2.25
-    });
-  }
-
-  // Gen 2: Ring 2 — 12 circles that complete the Flower of Life
-  // These appear at intersections of ring-1 circles
+  // Ring 1: All 6 circles appear together → Seed of Life (always 6-fold symmetric)
   for (let i = 0; i < 6; i++) {
     const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
-    // Directly outward (distance 2r from center)
-    circles.push({
-      dx: Math.cos(angle) * 2,
-      dy: Math.sin(angle) * 2,
-      birth: 3.0 + i * 0.2,
-    });
-    // Between ring-1 neighbors (distance sqrt(3)*r from center)
+    circles.push({ dx: Math.cos(angle), dy: Math.sin(angle), birth: 1.0 });
+  }
+
+  // Ring 2: All 12 circles appear together → Flower of Life (always symmetric)
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+    circles.push({ dx: Math.cos(angle) * 2, dy: Math.sin(angle) * 2, birth: 3.5 });
     const midAngle = angle + Math.PI / 6;
-    circles.push({
-      dx: Math.cos(midAngle) * Math.sqrt(3),
-      dy: Math.sin(midAngle) * Math.sqrt(3),
-      birth: 3.3 + i * 0.2,
-    });
+    circles.push({ dx: Math.cos(midAngle) * Math.sqrt(3), dy: Math.sin(midAngle) * Math.sqrt(3), birth: 3.5 });
   }
 
   return circles;
@@ -208,7 +192,7 @@ export class GeometryRenderer {
 
     for (const sc of SACRED_CIRCLES) {
       if (form < sc.birth) continue;
-      const age = Math.min(1, (form - sc.birth) * 2.5); // grow-in speed
+      const age = Math.min(1, (form - sc.birth) * 4.0); // fast grow-in to avoid wonky mid-growth
       const r = circleR * age * breathe;
       const x = cx + sc.dx * circleR * breathe;
       const y = cy + sc.dy * circleR * breathe;
@@ -223,30 +207,10 @@ export class GeometryRenderer {
       ctx.stroke();
     }
 
-    // === PHASE 2: Vesica Piscis highlight (form 0.5 → 1.5) ===
-    // The almond-shaped intersection of first two circles glows
-    if (form > 0.5 && form < 2.0) {
-      const vpAlpha = form < 1.0 ? (form - 0.5) * 2 : Math.max(0, 2.0 - form);
-      if (vpAlpha > 0.01 && circlePositions.length >= 2) {
-        const c1 = circlePositions[0];
-        const c2 = circlePositions[1];
-        const midX = (c1.x + c2.x) / 2;
-        const midY = (c1.y + c2.y) / 2;
-        const glowR = circleR * 0.3;
-        const grad = ctx.createRadialGradient(midX, midY, 0, midX, midY, glowR);
-        grad.addColorStop(0, this.rgba(innerColor, alpha * 0.25 * vpAlpha));
-        grad.addColorStop(1, this.rgba(innerColor, 0));
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(midX, midY, glowR, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    // === PHASE 3: Triangles emerge from circle intersections (form 2.5+) ===
-    // The first triangle connects alternating ring-1 circle centers
-    if (form > 2.2) {
-      const triAlpha = Math.min(1, (form - 2.2) * 1.5);
+    // === PHASE 2: Triangles emerge from Seed of Life intersections (form 2+) ===
+    // Connecting alternating ring-1 circle centers reveals the hidden hexagram
+    if (form > 1.8) {
+      const triAlpha = Math.min(1, (form - 1.8) * 1.5);
 
       // Upward triangle: ring-1 circles at indices 0, 2, 4 (every other)
       ctx.lineWidth = 1.5;
@@ -270,9 +234,9 @@ export class GeometryRenderer {
         }
       }
 
-      // Nested triangles at smaller scales (form 3+)
-      if (form > 3.0) {
-        const nestAlpha = Math.min(1, (form - 3.0) * 1.2);
+      // Nested triangles at smaller scales (form 2.5+)
+      if (form > 2.5) {
+        const nestAlpha = Math.min(1, (form - 2.5) * 1.2);
         const scales = [0.55, 0.3];
         for (const scale of scales) {
           for (let pass = 0; pass < 2; pass++) {
@@ -295,10 +259,10 @@ export class GeometryRenderer {
       }
     }
 
-    // === PHASE 4: Hexagram emerges (form 3+) ===
-    // The Star of David is already hidden in the Seed of Life — we just draw it
-    if (form > 2.8 && circlePositions.length >= 7) {
-      const hexAlpha = Math.min(1, (form - 2.8) * 1.2);
+    // === PHASE 3: Hexagram emerges (form 2.2+) ===
+    // The Star of David is already hidden in the Seed of Life — we just reveal it
+    if (form > 2.2 && circlePositions.length >= 7) {
+      const hexAlpha = Math.min(1, (form - 2.2) * 1.2);
       // Hexagon connecting all ring-1 centers
       ctx.strokeStyle = this.rgba(color, alpha * hexAlpha * 0.3);
       ctx.lineWidth = 0.8;
