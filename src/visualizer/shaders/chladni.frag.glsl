@@ -29,22 +29,22 @@ void main() {
   // Add subtle breathing animation
   pattern += sin(u_time * 0.5) * 0.05;
 
-  // Modulate with amplitude for audio reactivity
-  pattern *= (0.7 + u_amplitude * 0.3);
+  // Modulate with amplitude for audio reactivity (less extreme)
+  pattern *= (0.85 + u_amplitude * 0.15);
 
   // Create bright nodal lines where pattern ≈ 0
   // The smaller abs(pattern), the brighter the line
-  float lineThickness = 0.15 + u_amplitude * 0.1;
+  float lineThickness = 0.18 + u_amplitude * 0.08;
   float nodal = 1.0 - smoothstep(0.0, lineThickness, abs(pattern));
 
-  // Add soft glow around nodal lines
-  float glow = exp(-abs(pattern) * 8.0) * 0.3 * (0.5 + u_amplitude * 0.5);
+  // Add soft glow around nodal lines (stronger base glow)
+  float glow = exp(-abs(pattern) * 7.0) * 0.5 * (0.7 + u_amplitude * 0.3);
 
   // Fade out at edges (circular mask)
   float mask = smoothstep(1.0, 0.6, r);
 
-  // Combine: nodal lines + glow, masked by circle
-  float intensity = (nodal * 0.7 + glow) * mask;
+  // Combine: nodal lines + glow, masked by circle (boosted intensity)
+  float intensity = (nodal * 0.9 + glow * 0.8) * mask;
 
   // Apply color with intensity
   vec3 finalColor = u_color * intensity;
