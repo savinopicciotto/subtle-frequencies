@@ -1,14 +1,16 @@
 /**
  * Sacred Geometry / Yantra Renderer
  *
- * Maps frequencies to chakra yantra system with authentic sacred geometry forms:
- * - Root: Seed of Life (7 overlapping circles) + 4 petals
- * - Sacral: Flower of Life emerging + 6 petals
- * - Solar Plexus: Full Flower of Life + downward triangle + 10 petals
- * - Heart: Sri Yantra (interlocking triangles) + hexagram + 12 petals
- * - Throat: Metatron's Cube + 16 petals
- * - Third Eye: Merkaba (3D star tetrahedron) + 2 petals
- * - Crown: Full mandala with golden spiral + 24 petals
+ * Unified organic progression following the Flower of Life construction:
+ * Each chakra level BUILDS on the previous — cellular division, not crossfading.
+ *
+ * Root (0):     Single circle — the seed, unity
+ * Sacral (1):   Vesica Piscis — duality, first division
+ * Solar (2.5):  Seed of Life forming — circles multiply
+ * Heart (3.5):  Seed of Life + hexagram emerges from intersections
+ * Throat (4.5): Flower of Life — second ring of circles grows outward
+ * Third Eye (5.5): Metatron's Cube — connecting lines reveal hidden structure
+ * Crown (6):    Full mandala — golden spiral unifies everything
  */
 
 interface GeometryRendererOptions {
@@ -18,74 +20,101 @@ interface GeometryRendererOptions {
 
 interface ChakraState {
   petals: number;
-  centralVertices: number;
-  rings: number;
   gateStyle: number;
   color: { r: number; g: number; b: number };
   innerColor: { r: number; g: number; b: number };
   rotSpeed: number;
-  complexity: number;
-  sacredForm: number; // 0=seed, 1=flower, 2=sri yantra, 3=metatron, 4=merkaba, 5=mandala
+  form: number; // 0-6 progressive growth
 }
 
 const CHAKRAS: { freq: number; state: ChakraState }[] = [
-  {
-    freq: 120,
-    state: {
-      petals: 4, centralVertices: 4, rings: 2, gateStyle: 1,
-      color: { r: 220, g: 50, b: 30 }, innerColor: { r: 240, g: 180, b: 50 },
-      rotSpeed: 0.02, complexity: 0.2, sacredForm: 0,
-    },
-  },
-  {
-    freq: 300,
-    state: {
-      petals: 6, centralVertices: 0, rings: 3, gateStyle: 0.7,
-      color: { r: 240, g: 140, b: 30 }, innerColor: { r: 255, g: 200, b: 60 },
-      rotSpeed: 0.03, complexity: 0.35, sacredForm: 0.8,
-    },
-  },
-  {
-    freq: 450,
-    state: {
-      petals: 10, centralVertices: 3, rings: 3, gateStyle: 0.4,
-      color: { r: 250, g: 210, b: 30 }, innerColor: { r: 255, g: 240, b: 100 },
-      rotSpeed: 0.04, complexity: 0.5, sacredForm: 1.5,
-    },
-  },
-  {
-    freq: 580,
-    state: {
-      petals: 12, centralVertices: 6, rings: 4, gateStyle: 0.2,
-      color: { r: 50, g: 220, b: 100 }, innerColor: { r: 140, g: 255, b: 160 },
-      rotSpeed: 0.035, complexity: 0.65, sacredForm: 2.5,
-    },
-  },
-  {
-    freq: 720,
-    state: {
-      petals: 16, centralVertices: 0, rings: 5, gateStyle: 0.1,
-      color: { r: 40, g: 150, b: 255 }, innerColor: { r: 120, g: 200, b: 255 },
-      rotSpeed: 0.03, complexity: 0.8, sacredForm: 3.5,
-    },
-  },
-  {
-    freq: 870,
-    state: {
-      petals: 2, centralVertices: 3, rings: 3, gateStyle: 0,
-      color: { r: 140, g: 60, b: 255 }, innerColor: { r: 200, g: 150, b: 255 },
-      rotSpeed: 0.025, complexity: 0.7, sacredForm: 4.5,
-    },
-  },
-  {
-    freq: 1000,
-    state: {
-      petals: 24, centralVertices: 1, rings: 6, gateStyle: 0,
-      color: { r: 200, g: 160, b: 255 }, innerColor: { r: 255, g: 245, b: 255 },
-      rotSpeed: 0.015, complexity: 1.0, sacredForm: 5,
-    },
-  },
+  { freq: 120, state: {
+    petals: 4, gateStyle: 1,
+    color: { r: 220, g: 50, b: 30 }, innerColor: { r: 240, g: 180, b: 50 },
+    rotSpeed: 0.02, form: 0,
+  }},
+  { freq: 300, state: {
+    petals: 6, gateStyle: 0.7,
+    color: { r: 240, g: 140, b: 30 }, innerColor: { r: 255, g: 200, b: 60 },
+    rotSpeed: 0.025, form: 1,
+  }},
+  { freq: 450, state: {
+    petals: 10, gateStyle: 0.4,
+    color: { r: 250, g: 210, b: 30 }, innerColor: { r: 255, g: 240, b: 100 },
+    rotSpeed: 0.03, form: 2.5,
+  }},
+  { freq: 580, state: {
+    petals: 12, gateStyle: 0.2,
+    color: { r: 50, g: 220, b: 100 }, innerColor: { r: 140, g: 255, b: 160 },
+    rotSpeed: 0.03, form: 3.5,
+  }},
+  { freq: 720, state: {
+    petals: 16, gateStyle: 0.1,
+    color: { r: 40, g: 150, b: 255 }, innerColor: { r: 120, g: 200, b: 255 },
+    rotSpeed: 0.025, form: 4.5,
+  }},
+  { freq: 870, state: {
+    petals: 2, gateStyle: 0,
+    color: { r: 140, g: 60, b: 255 }, innerColor: { r: 200, g: 150, b: 255 },
+    rotSpeed: 0.02, form: 5.5,
+  }},
+  { freq: 1000, state: {
+    petals: 24, gateStyle: 0,
+    color: { r: 200, g: 160, b: 255 }, innerColor: { r: 255, g: 245, b: 255 },
+    rotSpeed: 0.015, form: 6,
+  }},
 ];
+
+// Precomputed circle positions for the Flower of Life
+// Each has a birth threshold — the form value at which it appears
+interface SacredCircle {
+  dx: number; // offset from center (in units of circle radius)
+  dy: number;
+  birth: number;
+}
+
+// Build the Flower of Life circle order — each one "born" from intersections of previous
+function buildCircleOrder(): SacredCircle[] {
+  const circles: SacredCircle[] = [];
+
+  // Gen 0: Center circle (Root — the seed)
+  circles.push({ dx: 0, dy: 0, birth: 0 });
+
+  // Gen 1: Ring 1 circles appear sequentially around center
+  // This creates the Seed of Life (7 circles total)
+  // Each appears at intersection points of existing circles
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2 - Math.PI / 2; // start from top
+    circles.push({
+      dx: Math.cos(angle),
+      dy: Math.sin(angle),
+      birth: 0.5 + i * 0.35, // 0.5, 0.85, 1.2, 1.55, 1.9, 2.25
+    });
+  }
+
+  // Gen 2: Ring 2 — 12 circles that complete the Flower of Life
+  // These appear at intersections of ring-1 circles
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+    // Directly outward (distance 2r from center)
+    circles.push({
+      dx: Math.cos(angle) * 2,
+      dy: Math.sin(angle) * 2,
+      birth: 3.0 + i * 0.2,
+    });
+    // Between ring-1 neighbors (distance sqrt(3)*r from center)
+    const midAngle = angle + Math.PI / 6;
+    circles.push({
+      dx: Math.cos(midAngle) * Math.sqrt(3),
+      dy: Math.sin(midAngle) * Math.sqrt(3),
+      birth: 3.3 + i * 0.2,
+    });
+  }
+
+  return circles;
+}
+
+const SACRED_CIRCLES = buildCircleOrder();
 
 export class GeometryRenderer {
   private canvas: HTMLCanvasElement;
@@ -116,377 +145,237 @@ export class GeometryRenderer {
     this.target = this.getChakraState(frequency);
   }
 
-  setAmplitude(amplitude: number): void {
-    this.amplitude = amplitude;
-  }
-
-  setHarmonicRatios(ratios: number[]): void {
-    this.harmonicRatios = ratios;
-  }
+  setAmplitude(amplitude: number): void { this.amplitude = amplitude; }
+  setHarmonicRatios(ratios: number[]): void { this.harmonicRatios = ratios; }
 
   private getChakraState(freq: number): ChakraState {
-    const clampedFreq = Math.max(20, Math.min(freq, 2000));
-    let lower = CHAKRAS[0];
-    let upper = CHAKRAS[CHAKRAS.length - 1];
+    const f = Math.max(20, Math.min(freq, 2000));
+    if (f <= CHAKRAS[0].freq) return { ...CHAKRAS[0].state };
+    if (f >= CHAKRAS[CHAKRAS.length - 1].freq) return { ...CHAKRAS[CHAKRAS.length - 1].state };
+    let lo = CHAKRAS[0], hi = CHAKRAS[CHAKRAS.length - 1];
     for (let i = 0; i < CHAKRAS.length - 1; i++) {
-      if (clampedFreq >= CHAKRAS[i].freq && clampedFreq <= CHAKRAS[i + 1].freq) {
-        lower = CHAKRAS[i];
-        upper = CHAKRAS[i + 1];
-        break;
-      }
+      if (f >= CHAKRAS[i].freq && f <= CHAKRAS[i + 1].freq) { lo = CHAKRAS[i]; hi = CHAKRAS[i + 1]; break; }
     }
-    if (clampedFreq <= CHAKRAS[0].freq) return { ...CHAKRAS[0].state };
-    if (clampedFreq >= CHAKRAS[CHAKRAS.length - 1].freq) return { ...CHAKRAS[CHAKRAS.length - 1].state };
-    const t = (clampedFreq - lower.freq) / (upper.freq - lower.freq);
+    const t = (f - lo.freq) / (hi.freq - lo.freq);
     const st = t * t * (3 - 2 * t);
+    const lerp = (a: number, b: number) => a + (b - a) * st;
+    const lc = (a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }) =>
+      ({ r: a.r + (b.r - a.r) * st, g: a.g + (b.g - a.g) * st, b: a.b + (b.b - a.b) * st });
     return {
-      petals: lower.state.petals + (upper.state.petals - lower.state.petals) * st,
-      centralVertices: lower.state.centralVertices + (upper.state.centralVertices - lower.state.centralVertices) * st,
-      rings: lower.state.rings + (upper.state.rings - lower.state.rings) * st,
-      gateStyle: this.lerp(lower.state.gateStyle, upper.state.gateStyle, st),
-      color: this.lerpColor(lower.state.color, upper.state.color, st),
-      innerColor: this.lerpColor(lower.state.innerColor, upper.state.innerColor, st),
-      rotSpeed: this.lerp(lower.state.rotSpeed, upper.state.rotSpeed, st),
-      complexity: this.lerp(lower.state.complexity, upper.state.complexity, st),
-      sacredForm: this.lerp(lower.state.sacredForm, upper.state.sacredForm, st),
+      petals: lerp(lo.state.petals, hi.state.petals),
+      gateStyle: lerp(lo.state.gateStyle, hi.state.gateStyle),
+      color: lc(lo.state.color, hi.state.color),
+      innerColor: lc(lo.state.innerColor, hi.state.innerColor),
+      rotSpeed: lerp(lo.state.rotSpeed, hi.state.rotSpeed),
+      form: lerp(lo.state.form, hi.state.form),
     };
-  }
-
-  private lerp(a: number, b: number, t: number): number { return a + (b - a) * t; }
-  private lerpColor(a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }, t: number) {
-    return { r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t };
   }
 
   private updateState(dt: number): void {
-    const speed = Math.min(dt * 4.0, 0.3);
-    this.current.petals += (this.target.petals - this.current.petals) * speed;
-    this.current.centralVertices += (this.target.centralVertices - this.current.centralVertices) * speed;
-    this.current.rings += (this.target.rings - this.current.rings) * speed;
-    this.current.gateStyle += (this.target.gateStyle - this.current.gateStyle) * speed;
-    this.current.sacredForm += (this.target.sacredForm - this.current.sacredForm) * speed;
-    this.current.color = {
-      r: this.current.color.r + (this.target.color.r - this.current.color.r) * speed,
-      g: this.current.color.g + (this.target.color.g - this.current.color.g) * speed,
-      b: this.current.color.b + (this.target.color.b - this.current.color.b) * speed,
-    };
-    this.current.innerColor = {
-      r: this.current.innerColor.r + (this.target.innerColor.r - this.current.innerColor.r) * speed,
-      g: this.current.innerColor.g + (this.target.innerColor.g - this.current.innerColor.g) * speed,
-      b: this.current.innerColor.b + (this.target.innerColor.b - this.current.innerColor.b) * speed,
-    };
-    this.current.rotSpeed += (this.target.rotSpeed - this.current.rotSpeed) * speed;
-    this.current.complexity += (this.target.complexity - this.current.complexity) * speed;
+    const sp = Math.min(dt * 4.0, 0.3);
+    const c = this.current, t = this.target;
+    c.petals += (t.petals - c.petals) * sp;
+    c.gateStyle += (t.gateStyle - c.gateStyle) * sp;
+    c.form += (t.form - c.form) * sp;
+    c.rotSpeed += (t.rotSpeed - c.rotSpeed) * sp;
+    c.color = { r: c.color.r + (t.color.r - c.color.r) * sp, g: c.color.g + (t.color.g - c.color.g) * sp, b: c.color.b + (t.color.b - c.color.b) * sp };
+    c.innerColor = { r: c.innerColor.r + (t.innerColor.r - c.innerColor.r) * sp, g: c.innerColor.g + (t.innerColor.g - c.innerColor.g) * sp, b: c.innerColor.b + (t.innerColor.b - c.innerColor.b) * sp };
   }
 
-  // ========== UTILITY ==========
-
-  private rgba(color: { r: number; g: number; b: number }, alpha: number): string {
-    return `rgba(${Math.round(color.r)},${Math.round(color.g)},${Math.round(color.b)},${Math.max(0, Math.min(1, alpha))})`;
+  private rgba(c: { r: number; g: number; b: number }, a: number): string {
+    return `rgba(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)},${Math.max(0, Math.min(1, a))})`;
   }
 
-  // ========== SACRED GEOMETRY FORMS ==========
+  // ========== UNIFIED SACRED PROGRESSION ==========
 
   /**
-   * Seed of Life: 7 overlapping circles (1 center + 6 around it)
+   * Draw the progressive sacred geometry — one system that grows
+   * from a single circle to the full Flower of Life / Metatron's Cube
    */
-  private drawSeedOfLife(cx: number, cy: number, radius: number, rot: number, color: { r: number; g: number; b: number }, alpha: number): void {
+  private drawSacredProgression(
+    cx: number, cy: number, radius: number,
+    form: number, rot: number, breathe: number,
+    color: { r: number; g: number; b: number },
+    innerColor: { r: number; g: number; b: number },
+    alpha: number
+  ): void {
     const ctx = this.ctx;
-    const r = radius * 0.35;
-    ctx.strokeStyle = this.rgba(color, alpha * 0.8);
-    ctx.lineWidth = 1.5;
+    const circleR = radius * 0.25; // radius of each individual circle
 
-    // Center circle
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
+    // === PHASE 1: Circles appear progressively (form 0 → 4.5) ===
+    // Each circle grows in from its birth point
+    const circlePositions: { x: number; y: number; age: number }[] = [];
 
-    // 6 surrounding circles
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2 + rot;
-      const x = cx + Math.cos(angle) * r;
-      const y = cy + Math.sin(angle) * r;
+    for (const sc of SACRED_CIRCLES) {
+      if (form < sc.birth) continue;
+      const age = Math.min(1, (form - sc.birth) * 2.5); // grow-in speed
+      const r = circleR * age * breathe;
+      const x = cx + sc.dx * circleR * breathe;
+      const y = cy + sc.dy * circleR * breathe;
+
+      circlePositions.push({ x, y, age });
+
+      // Draw circle with age-based alpha
+      ctx.strokeStyle = this.rgba(innerColor, alpha * 0.7 * age);
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.stroke();
     }
-  }
 
-  /**
-   * Flower of Life: 19 overlapping circles (Seed of Life + 12 outer)
-   * blendIn 0-1 controls how many outer circles are visible
-   */
-  private drawFlowerOfLife(cx: number, cy: number, radius: number, rot: number, blendIn: number, color: { r: number; g: number; b: number }, alpha: number): void {
-    const ctx = this.ctx;
-    const r = radius * 0.22;
-    ctx.lineWidth = 1.2;
-
-    // All circle positions for Flower of Life
-    const positions: { x: number; y: number; ring: number }[] = [];
-
-    // Ring 0: center
-    positions.push({ x: 0, y: 0, ring: 0 });
-
-    // Ring 1: 6 circles at distance r
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2 + rot;
-      positions.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r, ring: 1 });
-    }
-
-    // Ring 2: 12 circles at distance r*sqrt(3) and r*2
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2 + rot;
-      // Between two ring-1 circles
-      const midAngle = angle + Math.PI / 6;
-      positions.push({ x: Math.cos(midAngle) * r * Math.sqrt(3), y: Math.sin(midAngle) * r * Math.sqrt(3), ring: 2 });
-      // Directly outward from ring-1
-      positions.push({ x: Math.cos(angle) * r * 2, y: Math.sin(angle) * r * 2, ring: 2 });
-    }
-
-    // Draw circles with fade based on ring and blendIn
-    positions.forEach((pos) => {
-      let a = alpha * 0.75;
-      if (pos.ring === 2) {
-        a *= Math.max(0, Math.min(1, blendIn));
-      }
-      if (a < 0.01) return;
-      ctx.strokeStyle = this.rgba(color, a);
-      ctx.beginPath();
-      ctx.arc(cx + pos.x, cy + pos.y, r, 0, Math.PI * 2);
-      ctx.stroke();
-    });
-
-    // Outer bounding circle
-    ctx.strokeStyle = this.rgba(color, alpha * 0.3);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius * 0.72, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  /**
-   * Sri Yantra: 9 interlocking triangles (4 upward + 5 downward)
-   * Creates the classic nested triangle pattern
-   */
-  private drawSriYantra(cx: number, cy: number, radius: number, rot: number, color: { r: number; g: number; b: number }, innerColor: { r: number; g: number; b: number }, alpha: number): void {
-    const ctx = this.ctx;
-    ctx.lineWidth = 1.5;
-
-    // Draw nested triangles at different scales
-    // 4 upward-pointing triangles
-    const upScales = [0.95, 0.72, 0.5, 0.3];
-    const upOffsets = [0, 0.02, 0.05, 0.08]; // slight vertical offsets for authentic look
-
-    for (let i = 0; i < upScales.length; i++) {
-      const s = upScales[i] * radius;
-      const yOff = upOffsets[i] * radius;
-      const a = alpha * (0.9 - i * 0.1);
-      ctx.strokeStyle = this.rgba(color, a);
-      ctx.beginPath();
-      for (let v = 0; v < 3; v++) {
-        const angle = (v / 3) * Math.PI * 2 - Math.PI / 2 + rot;
-        const x = cx + Math.cos(angle) * s;
-        const y = cy + Math.sin(angle) * s + yOff;
-        if (v === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.stroke();
-    }
-
-    // 5 downward-pointing triangles (inverted)
-    const downScales = [0.88, 0.65, 0.45, 0.28, 0.15];
-    const downOffsets = [-0.02, -0.04, -0.06, -0.07, -0.05];
-
-    for (let i = 0; i < downScales.length; i++) {
-      const s = downScales[i] * radius;
-      const yOff = downOffsets[i] * radius;
-      const a = alpha * (0.85 - i * 0.08);
-      ctx.strokeStyle = this.rgba(innerColor, a);
-      ctx.beginPath();
-      for (let v = 0; v < 3; v++) {
-        const angle = (v / 3) * Math.PI * 2 + Math.PI / 2 + rot; // inverted
-        const x = cx + Math.cos(angle) * s;
-        const y = cy + Math.sin(angle) * s + yOff;
-        if (v === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.stroke();
-    }
-
-    // Inner bindu circle
-    ctx.strokeStyle = this.rgba(innerColor, alpha * 0.6);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius * 0.08, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  /**
-   * Metatron's Cube: 13 circles connected by lines
-   * Creates the classic 3D-illusion sacred geometry pattern
-   */
-  private drawMetatronsCube(cx: number, cy: number, radius: number, rot: number, color: { r: number; g: number; b: number }, innerColor: { r: number; g: number; b: number }, alpha: number): void {
-    const ctx = this.ctx;
-    const nodeR = radius * 0.06;
-
-    // 13 node positions: 1 center + 6 inner ring + 6 outer ring
-    const nodes: { x: number; y: number }[] = [];
-    nodes.push({ x: cx, y: cy }); // center
-
-    const innerR = radius * 0.42;
-    const outerR = radius * 0.84;
-
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2 + rot;
-      nodes.push({ x: cx + Math.cos(angle) * innerR, y: cy + Math.sin(angle) * innerR });
-    }
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2 + rot + Math.PI / 6;
-      nodes.push({ x: cx + Math.cos(angle) * outerR, y: cy + Math.sin(angle) * outerR });
-    }
-
-    // Draw connecting lines (every node to every other — the full Metatron's Cube)
-    ctx.strokeStyle = this.rgba(color, alpha * 0.2);
-    ctx.lineWidth = 0.7;
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
+    // === PHASE 2: Vesica Piscis highlight (form 0.5 → 1.5) ===
+    // The almond-shaped intersection of first two circles glows
+    if (form > 0.5 && form < 2.0) {
+      const vpAlpha = form < 1.0 ? (form - 0.5) * 2 : Math.max(0, 2.0 - form);
+      if (vpAlpha > 0.01 && circlePositions.length >= 2) {
+        const c1 = circlePositions[0];
+        const c2 = circlePositions[1];
+        const midX = (c1.x + c2.x) / 2;
+        const midY = (c1.y + c2.y) / 2;
+        const glowR = circleR * 0.3;
+        const grad = ctx.createRadialGradient(midX, midY, 0, midX, midY, glowR);
+        grad.addColorStop(0, this.rgba(innerColor, alpha * 0.25 * vpAlpha));
+        grad.addColorStop(1, this.rgba(innerColor, 0));
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.moveTo(nodes[i].x, nodes[i].y);
-        ctx.lineTo(nodes[j].x, nodes[j].y);
-        ctx.stroke();
+        ctx.arc(midX, midY, glowR, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
-    // Draw node circles
-    nodes.forEach((node, i) => {
-      const c = i === 0 ? innerColor : color;
-      const a = i === 0 ? alpha * 0.9 : alpha * 0.7;
+    // === PHASE 3: Triangles emerge from circle intersections (form 2.5+) ===
+    // The first triangle connects alternating ring-1 circle centers
+    if (form > 2.2) {
+      const triAlpha = Math.min(1, (form - 2.2) * 1.5);
 
-      // Circle outline
-      ctx.strokeStyle = this.rgba(c, a);
+      // Upward triangle: ring-1 circles at indices 0, 2, 4 (every other)
       ctx.lineWidth = 1.5;
+      for (let pass = 0; pass < 2; pass++) {
+        const startIdx = pass; // 0 = upward, 1 = downward
+        const c = pass === 0 ? color : innerColor;
+        const a = alpha * triAlpha * (pass === 0 ? 0.7 : 0.55);
+        const verts: { x: number; y: number }[] = [];
+        for (let i = startIdx; i < 6; i += 2) {
+          const ci = circlePositions[1 + i]; // ring-1 circles are indices 1-6
+          if (ci) verts.push({ x: ci.x, y: ci.y });
+        }
+        if (verts.length === 3) {
+          ctx.strokeStyle = this.rgba(c, a);
+          ctx.beginPath();
+          ctx.moveTo(verts[0].x, verts[0].y);
+          ctx.lineTo(verts[1].x, verts[1].y);
+          ctx.lineTo(verts[2].x, verts[2].y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      }
+
+      // Nested triangles at smaller scales (form 3+)
+      if (form > 3.0) {
+        const nestAlpha = Math.min(1, (form - 3.0) * 1.2);
+        const scales = [0.55, 0.3];
+        for (const scale of scales) {
+          for (let pass = 0; pass < 2; pass++) {
+            const c = pass === 0 ? color : innerColor;
+            const a = alpha * nestAlpha * 0.4;
+            ctx.strokeStyle = this.rgba(c, a);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let v = 0; v < 3; v++) {
+              const baseAngle = pass === 0 ? -Math.PI / 2 : Math.PI / 2;
+              const angle = (v / 3) * Math.PI * 2 + baseAngle + rot * 0.3;
+              const x = cx + Math.cos(angle) * circleR * scale * breathe;
+              const y = cy + Math.sin(angle) * circleR * scale * breathe;
+              if (v === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // === PHASE 4: Hexagram emerges (form 3+) ===
+    // The Star of David is already hidden in the Seed of Life — we just draw it
+    if (form > 2.8 && circlePositions.length >= 7) {
+      const hexAlpha = Math.min(1, (form - 2.8) * 1.2);
+      // Hexagon connecting all ring-1 centers
+      ctx.strokeStyle = this.rgba(color, alpha * hexAlpha * 0.3);
+      ctx.lineWidth = 0.8;
       ctx.beginPath();
-      ctx.arc(node.x, node.y, nodeR, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Subtle fill
-      ctx.fillStyle = this.rgba(c, a * 0.15);
-      ctx.fill();
-    });
-  }
-
-  /**
-   * Merkaba: 2D projection of star tetrahedron (two interlocking triangles with depth lines)
-   */
-  private drawMerkaba(cx: number, cy: number, radius: number, rot: number, color: { r: number; g: number; b: number }, innerColor: { r: number; g: number; b: number }, alpha: number): void {
-    const ctx = this.ctx;
-
-    // Outer triangle (upward)
-    const drawTriangle = (scale: number, invert: boolean, c: { r: number; g: number; b: number }, a: number) => {
-      const s = scale * radius;
-      ctx.strokeStyle = this.rgba(c, a);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let v = 0; v < 3; v++) {
-        const baseAngle = invert ? Math.PI / 2 : -Math.PI / 2;
-        const angle = (v / 3) * Math.PI * 2 + baseAngle + rot;
-        const x = cx + Math.cos(angle) * s;
-        const y = cy + Math.sin(angle) * s;
-        if (v === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      for (let i = 0; i < 6; i++) {
+        const ci = circlePositions[1 + i];
+        if (!ci) continue;
+        if (i === 0) ctx.moveTo(ci.x, ci.y); else ctx.lineTo(ci.x, ci.y);
       }
       ctx.closePath();
       ctx.stroke();
-    };
+    }
 
-    // Large star (two interlocking triangles)
-    drawTriangle(0.9, false, color, alpha * 0.85);
-    drawTriangle(0.9, true, innerColor, alpha * 0.85);
+    // === PHASE 5: Metatron's Cube connecting lines (form 4.5+) ===
+    // Lines connecting all circle centers — reveals the hidden structure
+    if (form > 4.5 && circlePositions.length > 7) {
+      const lineAlpha = Math.min(1, (form - 4.5) * 1.0);
+      ctx.strokeStyle = this.rgba(color, alpha * lineAlpha * 0.15);
+      ctx.lineWidth = 0.6;
 
-    // Inner star (smaller, offset rotation for 3D effect)
-    drawTriangle(0.55, false, color, alpha * 0.5);
-    drawTriangle(0.55, true, innerColor, alpha * 0.5);
+      // Connect every circle center to every other
+      for (let i = 0; i < circlePositions.length; i++) {
+        for (let j = i + 1; j < circlePositions.length; j++) {
+          ctx.beginPath();
+          ctx.moveTo(circlePositions[i].x, circlePositions[i].y);
+          ctx.lineTo(circlePositions[j].x, circlePositions[j].y);
+          ctx.stroke();
+        }
+      }
 
-    // Depth lines connecting vertices of inner to outer
-    ctx.strokeStyle = this.rgba(color, alpha * 0.25);
-    ctx.lineWidth = 0.8;
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2 - Math.PI / 2 + rot;
-      const innerS = radius * 0.55;
-      const outerS = radius * 0.9;
+      // Highlight the circle centers as nodes
+      if (lineAlpha > 0.3) {
+        const nodeAlpha = (lineAlpha - 0.3) / 0.7;
+        for (const pos of circlePositions) {
+          ctx.fillStyle = this.rgba(innerColor, alpha * nodeAlpha * 0.4 * pos.age);
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, circleR * 0.06, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // === PHASE 6: Golden spiral emerges (form 5.5+) ===
+    if (form > 5.5) {
+      const spiralAlpha = Math.min(1, (form - 5.5) * 2);
+      const PHI = 1.618033988749;
+      ctx.strokeStyle = this.rgba(innerColor, alpha * spiralAlpha * 0.4);
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(angle) * innerS, cy + Math.sin(angle) * innerS);
-      ctx.lineTo(cx + Math.cos(angle + Math.PI / 6) * outerS, cy + Math.sin(angle + Math.PI / 6) * outerS);
+      for (let i = 0; i < 300; i++) {
+        const t = i / 300;
+        const angle = t * Math.PI * 6 + rot;
+        const r = radius * 0.04 * Math.pow(PHI, t * 3);
+        if (r > radius * 0.9) break;
+        const x = cx + Math.cos(angle) * r * breathe;
+        const y = cy + Math.sin(angle) * r * breathe;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
       ctx.stroke();
     }
 
-    // Central hexagon
-    ctx.strokeStyle = this.rgba(innerColor, alpha * 0.4);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2 + rot;
-      const x = cx + Math.cos(angle) * radius * 0.32;
-      const y = cy + Math.sin(angle) * radius * 0.32;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
-    ctx.stroke();
-  }
-
-  /**
-   * Golden Spiral mandala with layered rings
-   */
-  private drawGoldenMandala(cx: number, cy: number, radius: number, rot: number, color: { r: number; g: number; b: number }, innerColor: { r: number; g: number; b: number }, alpha: number): void {
-    const ctx = this.ctx;
-    const PHI = 1.618033988749;
-
-    // Golden spiral
-    ctx.strokeStyle = this.rgba(innerColor, alpha * 0.5);
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    const spiralSteps = 300;
-    for (let i = 0; i < spiralSteps; i++) {
-      const t = i / spiralSteps;
-      const angle = t * Math.PI * 6 + rot;
-      const r = radius * 0.05 * Math.pow(PHI, t * 3);
-      if (r > radius * 0.9) break;
-      const x = cx + Math.cos(angle) * r;
-      const y = cy + Math.sin(angle) * r;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Concentric golden-ratio rings
-    ctx.lineWidth = 1;
-    let ringR = radius * 0.1;
-    for (let i = 0; i < 7 && ringR < radius; i++) {
-      ctx.strokeStyle = this.rgba(color, alpha * (0.3 + i * 0.05));
+    // Outer bounding circle (always present, strength grows with form)
+    const boundAlpha = Math.min(1, form * 0.3);
+    if (boundAlpha > 0.01) {
+      ctx.strokeStyle = this.rgba(color, alpha * boundAlpha * 0.2);
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
-      ctx.stroke();
-      ringR *= PHI * 0.6;
-    }
-
-    // Radiating lines at golden angle intervals
-    const goldenAngle = Math.PI * 2 / (PHI * PHI);
-    ctx.strokeStyle = this.rgba(color, alpha * 0.15);
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i < 24; i++) {
-      const angle = i * goldenAngle + rot;
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(angle) * radius * 0.08, cy + Math.sin(angle) * radius * 0.08);
-      ctx.lineTo(cx + Math.cos(angle) * radius * 0.88, cy + Math.sin(angle) * radius * 0.88);
+      ctx.arc(cx, cy, radius * 0.85 * breathe, 0, Math.PI * 2);
       ctx.stroke();
     }
   }
 
-  // ========== YANTRA ELEMENTS ==========
+  // ========== YANTRA FRAME ELEMENTS ==========
 
   private drawPetalRing(cx: number, cy: number, innerRadius: number, petalLength: number, count: number, rotation: number, color: { r: number; g: number; b: number }, alpha: number): void {
     if (count < 1) return;
     const ctx = this.ctx;
-
     for (let i = 0; i < count; i++) {
       const angle = (i / count) * Math.PI * 2 + rotation;
       const baseX = cx + Math.cos(angle) * innerRadius;
@@ -495,22 +384,18 @@ export class GeometryRenderer {
       const tipY = baseY + Math.sin(angle) * petalLength;
       const perpAngle = angle + Math.PI / 2;
       const width = petalLength * 0.3;
-
-      // Pointed petal shape (more like reference yantras)
       const cp1x = baseX + Math.cos(angle) * petalLength * 0.4 + Math.cos(perpAngle) * width;
       const cp1y = baseY + Math.sin(angle) * petalLength * 0.4 + Math.sin(perpAngle) * width;
       const cp2x = baseX + Math.cos(angle) * petalLength * 0.4 - Math.cos(perpAngle) * width;
       const cp2y = baseY + Math.sin(angle) * petalLength * 0.4 - Math.sin(perpAngle) * width;
-
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
       ctx.quadraticCurveTo(cp1x, cp1y, tipX, tipY);
       ctx.quadraticCurveTo(cp2x, cp2y, baseX, baseY);
       ctx.closePath();
-
-      ctx.fillStyle = this.rgba(color, alpha * 0.12);
+      ctx.fillStyle = this.rgba(color, alpha * 0.1);
       ctx.fill();
-      ctx.strokeStyle = this.rgba(color, alpha * 0.85);
+      ctx.strokeStyle = this.rgba(color, alpha * 0.8);
       ctx.lineWidth = 1.2;
       ctx.stroke();
     }
@@ -526,25 +411,20 @@ export class GeometryRenderer {
       ctx.stroke();
       return;
     }
-
-    // Nested square bhupura (3 concentric squares like real yantras)
+    // Nested square bhupura
     const layers = gateStyle > 0.5 ? 3 : gateStyle > 0.2 ? 2 : 1;
     for (let layer = 0; layer < layers; layer++) {
       const layerR = radius * (1 - layer * 0.06);
-      const a = alpha * (0.5 - layer * 0.1);
-      ctx.strokeStyle = this.rgba(color, a);
+      ctx.strokeStyle = this.rgba(color, alpha * (0.45 - layer * 0.1));
       ctx.lineWidth = 2 - layer * 0.5;
-
       ctx.beginPath();
-      const steps = 360;
-      for (let i = 0; i <= steps; i++) {
-        const angle = (i / steps) * Math.PI * 2 + rotation;
+      for (let i = 0; i <= 360; i++) {
+        const angle = (i / 360) * Math.PI * 2 + rotation;
         const circR = layerR;
         const absC = Math.abs(Math.cos(angle - rotation));
         const absS = Math.abs(Math.sin(angle - rotation));
-        const sqR = layerR / Math.max(absC, absS);
-        const clampedSqR = Math.min(sqR, layerR * 1.42);
-        const r = this.lerp(circR, clampedSqR, gateStyle);
+        const sqR = Math.min(layerR / Math.max(absC, absS), layerR * 1.42);
+        const r = circR + (sqR - circR) * gateStyle;
         const x = cx + Math.cos(angle) * r;
         const y = cy + Math.sin(angle) * r;
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
@@ -552,29 +432,22 @@ export class GeometryRenderer {
       ctx.closePath();
       ctx.stroke();
     }
-
-    // T-shaped gates on cardinal directions
+    // T-gates
     if (gateStyle > 0.4) {
-      const gateAlpha = (gateStyle - 0.4) / 0.6;
-      ctx.strokeStyle = this.rgba(color, alpha * 0.4 * gateAlpha);
+      const ga = (gateStyle - 0.4) / 0.6;
+      ctx.strokeStyle = this.rgba(color, alpha * 0.35 * ga);
       ctx.lineWidth = 1.5;
       for (let g = 0; g < 4; g++) {
-        const gAngle = (g / 4) * Math.PI * 2 + rotation;
-        const gateW = radius * 0.1;
-        const gateD = radius * 0.12 * gateStyle;
-        const perpA = gAngle + Math.PI / 2;
-        const outerR = radius * 1.15;
-        const gx = cx + Math.cos(gAngle) * outerR;
-        const gy = cy + Math.sin(gAngle) * outerR;
-
-        // T-gate shape
+        const gA = (g / 4) * Math.PI * 2 + rotation;
+        const w = radius * 0.1, d = radius * 0.12 * gateStyle;
+        const pA = gA + Math.PI / 2;
+        const ox = cx + Math.cos(gA) * radius * 1.15;
+        const oy = cy + Math.sin(gA) * radius * 1.15;
         ctx.beginPath();
-        ctx.moveTo(gx + Math.cos(perpA) * gateW, gy + Math.sin(perpA) * gateW);
-        ctx.lineTo(gx + Math.cos(gAngle) * gateD + Math.cos(perpA) * gateW * 0.5,
-                   gy + Math.sin(gAngle) * gateD + Math.sin(perpA) * gateW * 0.5);
-        ctx.lineTo(gx + Math.cos(gAngle) * gateD - Math.cos(perpA) * gateW * 0.5,
-                   gy + Math.sin(gAngle) * gateD - Math.sin(perpA) * gateW * 0.5);
-        ctx.lineTo(gx - Math.cos(perpA) * gateW, gy - Math.sin(perpA) * gateW);
+        ctx.moveTo(ox + Math.cos(pA) * w, oy + Math.sin(pA) * w);
+        ctx.lineTo(ox + Math.cos(gA) * d + Math.cos(pA) * w * 0.5, oy + Math.sin(gA) * d + Math.sin(pA) * w * 0.5);
+        ctx.lineTo(ox + Math.cos(gA) * d - Math.cos(pA) * w * 0.5, oy + Math.sin(gA) * d - Math.sin(pA) * w * 0.5);
+        ctx.lineTo(ox - Math.cos(pA) * w, oy - Math.sin(pA) * w);
         ctx.stroke();
       }
     }
@@ -583,15 +456,14 @@ export class GeometryRenderer {
   private drawBindu(cx: number, cy: number, radius: number, color: { r: number; g: number; b: number }, alpha: number): void {
     const ctx = this.ctx;
     const glowR = radius * 5;
-    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
-    gradient.addColorStop(0, this.rgba(color, alpha * 0.8));
-    gradient.addColorStop(0.2, this.rgba(color, alpha * 0.3));
-    gradient.addColorStop(1, this.rgba(color, 0));
-    ctx.fillStyle = gradient;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+    grad.addColorStop(0, this.rgba(color, alpha * 0.8));
+    grad.addColorStop(0.2, this.rgba(color, alpha * 0.3));
+    grad.addColorStop(1, this.rgba(color, 0));
+    ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.fillStyle = this.rgba({ r: 255, g: 250, b: 240 }, alpha * 0.9);
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -607,7 +479,6 @@ export class GeometryRenderer {
 
     const ctx = this.ctx;
     const s = this.current;
-
     ctx.fillStyle = '#0a0a0f';
     ctx.fillRect(0, 0, this.width, this.height);
 
@@ -616,97 +487,32 @@ export class GeometryRenderer {
     const maxR = Math.min(this.width, this.height) * 0.44;
 
     const breathe = Math.sin(this.time * 0.8) * 0.02 + 1.0;
-    const breathe2 = Math.sin(this.time * 0.5 + 1.0) * 0.015 + 1.0;
     const rot1 = this.time * s.rotSpeed;
     const rot2 = -this.time * s.rotSpeed * 0.7;
     const rot3 = this.time * s.rotSpeed * 0.4;
     const alpha = 0.65 + this.amplitude * 0.35;
 
-    const dimColor = {
-      r: s.color.r * 0.6, g: s.color.g * 0.6, b: s.color.b * 0.6,
-    };
-
+    const dimColor = { r: s.color.r * 0.6, g: s.color.g * 0.6, b: s.color.b * 0.6 };
     const petals = Math.max(2, Math.round(s.petals));
-    const rings = Math.max(1, Math.round(s.rings));
 
-    // === LAYER 1: Bhupura (outer enclosure) ===
+    // === LAYER 1: Bhupura (outer frame) ===
     this.drawBhupura(cx, cy, maxR * breathe, s.gateStyle, rot3 * 0.3, dimColor, alpha);
 
     // === LAYER 2: Outer petal ring ===
     this.drawPetalRing(cx, cy, maxR * 0.7 * breathe, maxR * 0.2, petals, rot1, s.color, alpha * 0.7);
 
-    // === LAYER 3: Sacred Geometry Form (the main event) ===
-    const sacredR = maxR * 0.6 * breathe2;
-    const form = s.sacredForm;
-
-    if (form < 1) {
-      // Seed of Life → Flower of Life blend
-      const seedAlpha = Math.max(0, 1 - form);
-      const flowerAlpha = Math.min(1, form);
-      if (seedAlpha > 0.01) {
-        this.drawSeedOfLife(cx, cy, sacredR, rot1 * 0.5, s.innerColor, alpha * seedAlpha);
-      }
-      if (flowerAlpha > 0.01) {
-        this.drawFlowerOfLife(cx, cy, sacredR, rot1 * 0.5, flowerAlpha * 0.3, s.innerColor, alpha * flowerAlpha);
-      }
-    } else if (form < 2) {
-      // Flower of Life → Sri Yantra blend
-      const flowerAlpha = Math.max(0, 2 - form);
-      const yantraAlpha = Math.min(1, form - 1);
-      if (flowerAlpha > 0.01) {
-        this.drawFlowerOfLife(cx, cy, sacredR, rot1 * 0.5, 1, s.innerColor, alpha * flowerAlpha * 0.8);
-      }
-      if (yantraAlpha > 0.01) {
-        this.drawSriYantra(cx, cy, sacredR * 0.8, rot1 * 0.2, s.color, s.innerColor, alpha * yantraAlpha);
-      }
-    } else if (form < 3) {
-      // Sri Yantra → Metatron's Cube blend
-      const yantraAlpha = Math.max(0, 3 - form);
-      const metatronAlpha = Math.min(1, form - 2);
-      if (yantraAlpha > 0.01) {
-        this.drawSriYantra(cx, cy, sacredR * 0.8, rot1 * 0.2, s.color, s.innerColor, alpha * yantraAlpha);
-      }
-      if (metatronAlpha > 0.01) {
-        this.drawMetatronsCube(cx, cy, sacredR, rot1 * 0.3, s.color, s.innerColor, alpha * metatronAlpha);
-      }
-    } else if (form < 4) {
-      // Metatron's Cube → Merkaba blend
-      const metatronAlpha = Math.max(0, 4 - form);
-      const merkabaAlpha = Math.min(1, form - 3);
-      if (metatronAlpha > 0.01) {
-        this.drawMetatronsCube(cx, cy, sacredR, rot1 * 0.3, s.color, s.innerColor, alpha * metatronAlpha);
-      }
-      if (merkabaAlpha > 0.01) {
-        this.drawMerkaba(cx, cy, sacredR * 0.85, rot1 * 0.15, s.color, s.innerColor, alpha * merkabaAlpha);
-      }
-    } else {
-      // Merkaba → Golden Mandala blend
-      const merkabaAlpha = Math.max(0, 5 - form);
-      const mandalaAlpha = Math.min(1, form - 4);
-      if (merkabaAlpha > 0.01) {
-        this.drawMerkaba(cx, cy, sacredR * 0.85, rot1 * 0.15, s.color, s.innerColor, alpha * merkabaAlpha);
-      }
-      if (mandalaAlpha > 0.01) {
-        this.drawGoldenMandala(cx, cy, sacredR, rot1, s.color, s.innerColor, alpha * mandalaAlpha);
-      }
-    }
+    // === LAYER 3: Sacred geometry progression (the main event) ===
+    this.drawSacredProgression(
+      cx, cy, maxR * 0.65,
+      s.form, rot1 * 0.3, breathe,
+      s.color, s.innerColor, alpha
+    );
 
     // === LAYER 4: Inner petal ring ===
     const innerPetals = Math.max(2, Math.round(petals * 0.6));
-    this.drawPetalRing(cx, cy, maxR * 0.28 * breathe, maxR * 0.14, innerPetals, rot2, s.innerColor, alpha * 0.6);
+    this.drawPetalRing(cx, cy, maxR * 0.28 * breathe, maxR * 0.13, innerPetals, rot2, s.innerColor, alpha * 0.55);
 
-    // === LAYER 5: Concentric rings ===
-    for (let i = 1; i <= rings; i++) {
-      const t = i / (rings + 1);
-      const ringR = maxR * 0.65 * t * breathe2;
-      ctx.strokeStyle = this.rgba(dimColor, alpha * (0.15 + t * 0.2));
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    // === LAYER 6: Central bindu ===
+    // === LAYER 5: Central bindu ===
     this.drawBindu(cx, cy, maxR * 0.025 * breathe, s.innerColor, alpha);
   }
 
