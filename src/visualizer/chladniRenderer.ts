@@ -178,28 +178,28 @@ export class ChladniRenderer {
 
     const normalizedFreq = Math.max(20, Math.min(frequency, 20000));
 
-    // Calculate octaves from a reference frequency (100 Hz)
-    // Every octave up adds ~1 to mode numbers (more nodal lines, same topology)
-    const octavesFrom100Hz = Math.log2(normalizedFreq / 100);
+    // Calculate octaves from 30 Hz reference for higher mode numbers
+    // Lower reference = more octaves = more complex, visible patterns
+    const octavesFromRef = Math.log2(normalizedFreq / 30);
 
-    // Base mode complexity (starting pattern)
-    const baseN = 2;
+    // Higher base modes ensure visible patterns even at lowest frequencies
+    const baseN = 3;
     const baseM = 2;
 
     // Scale modes with octaves - preserves pattern topology across octaves
     // floor() gives discrete mode changes at musical intervals
-    const octaveOffset = Math.floor(Math.max(0, octavesFrom100Hz));
+    const octaveOffset = Math.floor(Math.max(0, octavesFromRef));
 
     // Add slight asymmetry for visual variety (N and M not identical)
     this.targetModeN = baseN + octaveOffset;
-    this.targetModeM = baseM + Math.floor(octaveOffset * 0.8); // Slightly different scaling
+    this.targetModeM = baseM + Math.floor(octaveOffset * 0.8);
 
-    // Clamp to reasonable range (1-10 modes)
-    this.targetModeN = Math.max(1, Math.min(10, this.targetModeN));
-    this.targetModeM = Math.max(1, Math.min(10, this.targetModeM));
+    // Clamp to reasonable range (2-12 modes for wider complexity)
+    this.targetModeN = Math.max(2, Math.min(12, this.targetModeN));
+    this.targetModeM = Math.max(2, Math.min(12, this.targetModeM));
 
     // Add fine-tuning within octave (fractional modes for smooth transitions)
-    const fractionalOctave = octavesFrom100Hz - Math.floor(octavesFrom100Hz);
+    const fractionalOctave = octavesFromRef - Math.floor(octavesFromRef);
     if (fractionalOctave > 0.7) {
       // Close to next octave - blend toward next mode
       this.targetModeN += 0.3;
