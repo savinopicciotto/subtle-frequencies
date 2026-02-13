@@ -1,6 +1,6 @@
 /**
  * Sacred Geometry Renderer
- * Creates beautiful geometric patterns based on golden ratio and sacred geometry
+ * Generates organic yantra/mandala patterns that modulate with frequency
  */
 
 interface GeometryRendererOptions {
@@ -16,342 +16,314 @@ export class GeometryRenderer {
   private frequency: number = 432;
   private amplitude: number = 0.5;
   private time: number = 0;
-  private harmonicRatios: number[] = []; // Active harmonic ratios from audio
+  private harmonicRatios: number[] = [];
 
   constructor(options: GeometryRendererOptions) {
-    // Use particleCanvas for 2D rendering (main canvas may have WebGL context)
     this.canvas = options.particleCanvas || options.canvas;
     const ctx = this.canvas.getContext('2d');
     if (!ctx) {
-      throw new Error('Failed to get 2D context - canvas may already have WebGL context');
+      throw new Error('Failed to get 2D context');
     }
     this.ctx = ctx;
     this.width = this.canvas.width;
     this.height = this.canvas.height;
   }
 
-  /**
-   * Update frequency
-   */
   updateFrequency(frequency: number): void {
     this.frequency = frequency;
   }
 
-  /**
-   * Set amplitude (from audio)
-   */
   setAmplitude(amplitude: number): void {
     this.amplitude = amplitude;
   }
 
-  /**
-   * Update harmonic ratios to visualize
-   */
   setHarmonicRatios(ratios: number[]): void {
     this.harmonicRatios = ratios;
   }
 
   /**
-   * Draw Flower of Life pattern
+   * Draw a lotus petal shape using bezier curves
    */
-  private drawFlowerOfLife(centerX: number, centerY: number, radius: number, alpha: number): void {
-    // Classic Flower of Life has 19 circles
-    const positions = [
-      { x: 0, y: 0 }, // Center
-      // Inner ring (6 circles)
-      { x: 1, y: 0 },
-      { x: 0.5, y: 0.866 },
-      { x: -0.5, y: 0.866 },
-      { x: -1, y: 0 },
-      { x: -0.5, y: -0.866 },
-      { x: 0.5, y: -0.866 },
-      // Outer ring (12 circles)
-      { x: 2, y: 0 },
-      { x: 1.5, y: 0.866 },
-      { x: 1, y: 1.732 },
-      { x: 0, y: 1.732 },
-      { x: -1, y: 1.732 },
-      { x: -1.5, y: 0.866 },
-      { x: -2, y: 0 },
-      { x: -1.5, y: -0.866 },
-      { x: -1, y: -1.732 },
-      { x: 0, y: -1.732 },
-      { x: 1, y: -1.732 },
-      { x: 1.5, y: -0.866 },
-    ];
+  private drawPetal(cx: number, cy: number, radius: number, angle: number, petalWidth: number, petalLength: number): void {
+    const ctx = this.ctx;
+    const tipX = cx + Math.cos(angle) * petalLength;
+    const tipY = cy + Math.sin(angle) * petalLength;
 
-    this.ctx.strokeStyle = `rgba(218, 165, 32, ${alpha})`;
-    this.ctx.lineWidth = 2;
+    // Control points for bezier curve (creates petal shape)
+    const perpAngle = angle + Math.PI / 2;
+    const baseWidth = petalWidth * radius;
 
-    positions.forEach((pos) => {
-      this.ctx.beginPath();
-      this.ctx.arc(
-        centerX + pos.x * radius,
-        centerY + pos.y * radius,
-        radius,
-        0,
-        Math.PI * 2
-      );
-      this.ctx.stroke();
-    });
+    const cp1x = cx + Math.cos(angle) * petalLength * 0.5 + Math.cos(perpAngle) * baseWidth;
+    const cp1y = cy + Math.sin(angle) * petalLength * 0.5 + Math.sin(perpAngle) * baseWidth;
+    const cp2x = cx + Math.cos(angle) * petalLength * 0.5 - Math.cos(perpAngle) * baseWidth;
+    const cp2y = cy + Math.sin(angle) * petalLength * 0.5 - Math.sin(perpAngle) * baseWidth;
+
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * radius * 0.1, cy + Math.sin(angle) * radius * 0.1);
+    ctx.quadraticCurveTo(cp1x, cp1y, tipX, tipY);
+    ctx.quadraticCurveTo(cp2x, cp2y, cx + Math.cos(angle) * radius * 0.1, cy + Math.sin(angle) * radius * 0.1);
+    ctx.closePath();
   }
 
   /**
-   * Draw Metatron's Cube (simplified)
+   * Draw a ring of lotus petals
    */
-  private drawMetatronsCube(centerX: number, centerY: number, radius: number, alpha: number): void {
-    // 13 circles in Fruit of Life pattern
-    const positions = [
-      { x: 0, y: 0 }, // Center
-      // Inner hexagon
-      { x: 1, y: 0 },
-      { x: 0.5, y: 0.866 },
-      { x: -0.5, y: 0.866 },
-      { x: -1, y: 0 },
-      { x: -0.5, y: -0.866 },
-      { x: 0.5, y: -0.866 },
-      // Outer points
-      { x: 0, y: 1.732 },
-      { x: 1.5, y: 0.866 },
-      { x: 1.5, y: -0.866 },
-      { x: 0, y: -1.732 },
-      { x: -1.5, y: -0.866 },
-      { x: -1.5, y: 0.866 },
-    ];
+  private drawPetalRing(cx: number, cy: number, innerRadius: number, petalLength: number, count: number, rotation: number, color: string, alpha: number): void {
+    const ctx = this.ctx;
 
-    // Draw connecting lines between all points
-    this.ctx.strokeStyle = `rgba(139, 69, 255, ${alpha * 0.3})`;
-    this.ctx.lineWidth = 1;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + rotation;
+      this.drawPetal(
+        cx + Math.cos(angle) * innerRadius,
+        cy + Math.sin(angle) * innerRadius,
+        petalLength,
+        angle,
+        0.35,
+        petalLength
+      );
+      ctx.fillStyle = color.replace('ALPHA', String(alpha * 0.3));
+      ctx.fill();
+      ctx.strokeStyle = color.replace('ALPHA', String(alpha));
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
 
-    for (let i = 0; i < positions.length; i++) {
-      for (let j = i + 1; j < positions.length; j++) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(centerX + positions[i].x * radius, centerY + positions[i].y * radius);
-        this.ctx.lineTo(centerX + positions[j].x * radius, centerY + positions[j].y * radius);
-        this.ctx.stroke();
+  /**
+   * Draw interlocking triangles (Sri Yantra inspired)
+   */
+  private drawTriangles(cx: number, cy: number, radius: number, rotation: number, alpha: number): void {
+    const ctx = this.ctx;
+
+    // Upward triangles
+    for (let i = 0; i < 3; i++) {
+      const scale = 1 - i * 0.2;
+      const r = radius * scale;
+      const rot = rotation + i * 0.15;
+      ctx.beginPath();
+      for (let j = 0; j < 3; j++) {
+        const angle = (j / 3) * Math.PI * 2 - Math.PI / 2 + rot;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        if (j === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(218, 190, 80, ${alpha * 0.8})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     }
 
-    // Draw circles at each point
-    this.ctx.strokeStyle = `rgba(139, 69, 255, ${alpha})`;
-    this.ctx.lineWidth = 2;
-    positions.forEach((pos) => {
-      this.ctx.beginPath();
-      this.ctx.arc(
-        centerX + pos.x * radius,
-        centerY + pos.y * radius,
-        radius * 0.15,
-        0,
-        Math.PI * 2
-      );
-      this.ctx.stroke();
-    });
-  }
-
-  /**
-   * Draw Fibonacci Spiral
-   */
-  private drawFibonacciSpiral(centerX: number, centerY: number, scale: number, alpha: number, rotation: number): void {
-    this.ctx.save();
-    this.ctx.translate(centerX, centerY);
-    this.ctx.rotate(rotation);
-
-    this.ctx.strokeStyle = `rgba(218, 165, 32, ${alpha})`;
-    this.ctx.lineWidth = 3;
-
-    // Draw golden spiral using quarter circles
-    const fibonacci = [1, 1, 2, 3, 5, 8, 13, 21, 34];
-    let x = 0;
-    let y = 0;
-    let direction = 0; // 0: right, 1: up, 2: left, 3: down
-
-    this.ctx.beginPath();
-    this.ctx.moveTo(x, y);
-
-    for (let i = 0; i < fibonacci.length - 1; i++) {
-      const radius = fibonacci[i] * scale;
-
-      // Calculate arc center and sweep based on direction
-      let cx = x;
-      let cy = y;
-      let startAngle = 0;
-      let endAngle = 0;
-
-      switch (direction % 4) {
-        case 0: // right -> down
-          cx = x + radius;
-          cy = y;
-          startAngle = Math.PI;
-          endAngle = Math.PI * 1.5;
-          x = cx;
-          y = cy + radius;
-          break;
-        case 1: // down -> left
-          cx = x;
-          cy = y + radius;
-          startAngle = Math.PI * 1.5;
-          endAngle = Math.PI * 2;
-          x = cx - radius;
-          y = cy;
-          break;
-        case 2: // left -> up
-          cx = x - radius;
-          cy = y;
-          startAngle = 0;
-          endAngle = Math.PI * 0.5;
-          x = cx;
-          y = cy - radius;
-          break;
-        case 3: // up -> right
-          cx = x;
-          cy = y - radius;
-          startAngle = Math.PI * 0.5;
-          endAngle = Math.PI;
-          x = cx + radius;
-          y = cy;
-          break;
+    // Downward triangles
+    for (let i = 0; i < 3; i++) {
+      const scale = 0.95 - i * 0.2;
+      const r = radius * scale;
+      const rot = rotation - i * 0.15;
+      ctx.beginPath();
+      for (let j = 0; j < 3; j++) {
+        const angle = (j / 3) * Math.PI * 2 + Math.PI / 2 + rot;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        if (j === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
-
-      this.ctx.arc(cx, cy, radius, startAngle, endAngle);
-      direction++;
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(180, 140, 60, ${alpha * 0.6})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     }
-
-    this.ctx.stroke();
-    this.ctx.restore();
   }
 
   /**
-   * Detect mathematical patterns in harmonic ratios
+   * Draw a concentric ring with optional modulation
    */
-  private detectPattern(): 'phi' | 'fibonacci' | 'sacred' | 'generic' {
-    const ratios = this.harmonicRatios;
-    if (ratios.length === 0) return 'generic';
+  private drawRing(cx: number, cy: number, radius: number, color: string, alpha: number, lineWidth: number = 1, modulation: number = 0, lobes: number = 0): void {
+    const ctx = this.ctx;
+    ctx.strokeStyle = color.replace('ALPHA', String(alpha));
+    ctx.lineWidth = lineWidth;
 
-    // Check for golden ratio (φ ≈ 1.618, φ² ≈ 2.618, φ³ ≈ 4.236)
-    const hasPhi = ratios.some(r => Math.abs(r - 1.618) < 0.01 || Math.abs(r - 2.618) < 0.01);
-    if (hasPhi) return 'phi';
-
-    // Check for Fibonacci (1, 2, 3, 5, 8, 13...)
-    const fibNumbers = [1, 2, 3, 5, 8, 13];
-    const isFib = ratios.filter(r => fibNumbers.some(f => Math.abs(r - f) < 0.1)).length >= 3;
-    if (isFib) return 'fibonacci';
-
-    // Check for sacred geometry constants (√2, √3, √5)
-    const hasSacred = ratios.some(r =>
-      Math.abs(r - 1.414) < 0.01 || // √2
-      Math.abs(r - 1.732) < 0.01 || // √3
-      Math.abs(r - 2.236) < 0.01    // √5
-    );
-    if (hasSacred) return 'sacred';
-
-    return 'generic';
+    if (modulation > 0 && lobes > 0) {
+      // Modulated ring (wavy circle)
+      ctx.beginPath();
+      for (let i = 0; i <= 360; i++) {
+        const angle = (i / 360) * Math.PI * 2;
+        const mod = 1 + Math.sin(angle * lobes) * modulation;
+        const x = cx + Math.cos(angle) * radius * mod;
+        const y = cy + Math.sin(angle) * radius * mod;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
 
   /**
-   * Render frame - adapts to active harmonic ratios
+   * Draw radial lines emanating from center
+   */
+  private drawRadials(cx: number, cy: number, innerRadius: number, outerRadius: number, count: number, rotation: number, alpha: number): void {
+    const ctx = this.ctx;
+    ctx.strokeStyle = `rgba(200, 180, 100, ${alpha * 0.3})`;
+    ctx.lineWidth = 0.5;
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + rotation;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(angle) * innerRadius, cy + Math.sin(angle) * innerRadius);
+      ctx.lineTo(cx + Math.cos(angle) * outerRadius, cy + Math.sin(angle) * outerRadius);
+      ctx.stroke();
+    }
+  }
+
+  /**
+   * Draw dots arranged in a ring
+   */
+  private drawDotRing(cx: number, cy: number, radius: number, count: number, dotSize: number, rotation: number, color: string, alpha: number): void {
+    const ctx = this.ctx;
+    ctx.fillStyle = color.replace('ALPHA', String(alpha));
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + rotation;
+      const x = cx + Math.cos(angle) * radius;
+      const y = cy + Math.sin(angle) * radius;
+      ctx.beginPath();
+      ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  /**
+   * Render frame - generates organic mandala/yantra
    */
   render(timestamp: number): void {
     this.time = timestamp * 0.001;
 
-    // Clear with dark background
-    this.ctx.fillStyle = '#0a0a0f';
-    this.ctx.fillRect(0, 0, this.width, this.height);
+    const ctx = this.ctx;
+    ctx.fillStyle = '#0a0a0f';
+    ctx.fillRect(0, 0, this.width, this.height);
 
-    const centerX = this.width / 2;
-    const centerY = this.height / 2;
-    const baseRadius = Math.min(this.width, this.height) * 0.15;
+    const cx = this.width / 2;
+    const cy = this.height / 2;
+    const maxRadius = Math.min(this.width, this.height) * 0.44;
 
-    // Animate based on frequency and amplitude
+    // Derive symmetry from frequency
     const freqFactor = this.frequency / 432;
-    const pulse = Math.sin(this.time * 2) * 0.1 + 0.9;
-    const rotation = this.time * 0.2 * freqFactor;
+    const symmetry = this.getSymmetry();
+    const numRings = Math.max(3, Math.min(7, this.harmonicRatios.filter(r => r >= 1).length + 2));
 
-    // Detect pattern type from active harmonics
-    const pattern = this.detectPattern();
+    // Slow organic breathing
+    const breathe = Math.sin(this.time * 0.8) * 0.03 + 1.0;
+    const breathe2 = Math.sin(this.time * 0.5 + 1.2) * 0.02 + 1.0;
 
-    if (pattern === 'phi') {
-      // Golden Ratio Visualization
-      // Draw multiple golden spirals at φ ratios
-      const phiRatios = this.harmonicRatios.filter(r => r >= 1.4 && r <= 7);
-      phiRatios.forEach((ratio, i) => {
-        const angle = (i / phiRatios.length) * Math.PI * 2 + rotation;
-        const distance = baseRadius * ratio * 0.5;
-        const spiralX = centerX + Math.cos(angle) * distance;
-        const spiralY = centerY + Math.sin(angle) * distance;
-        this.drawFibonacciSpiral(spiralX, spiralY, 2.5 * ratio / 3, 0.4 * this.amplitude, angle);
-      });
+    // Slow rotation speeds (different for each layer)
+    const rot1 = this.time * 0.05 * freqFactor;
+    const rot2 = -this.time * 0.03 * freqFactor;
+    const rot3 = this.time * 0.02 * freqFactor;
 
-      // Central golden rectangle cascade
-      for (let i = 0; i < 5; i++) {
-        const scale = Math.pow(1.618, i) * baseRadius * 0.15;
-        const alpha = (0.6 - i * 0.1) * this.amplitude;
-        this.ctx.strokeStyle = `rgba(218, 165, 32, ${alpha})`;
-        this.ctx.lineWidth = 2;
-        this.ctx.save();
-        this.ctx.translate(centerX, centerY);
-        this.ctx.rotate(rotation + i * 0.3);
-        this.ctx.strokeRect(-scale, -scale * 0.618, scale * 2, scale * 1.236);
-        this.ctx.restore();
+    // Base alpha - always visible, amplitude adds reactivity
+    const baseAlpha = 0.6;
+    const alpha = baseAlpha + this.amplitude * 0.4;
+
+    // === OUTER BOUNDARY ===
+    // Outer circle boundary
+    this.drawRing(cx, cy, maxRadius * breathe, `rgba(180, 160, 80, ALPHA)`, alpha * 0.5, 2);
+
+    // Modulated outer ring
+    this.drawRing(cx, cy, maxRadius * 0.95 * breathe, `rgba(200, 180, 100, ALPHA)`, alpha * 0.3, 1, 0.03, symmetry * 2);
+
+    // === OUTER PETAL RING ===
+    this.drawPetalRing(
+      cx, cy,
+      maxRadius * 0.7 * breathe,
+      maxRadius * 0.22,
+      symmetry,
+      rot1,
+      `rgba(218, 190, 80, ALPHA)`,
+      alpha * 0.7
+    );
+
+    // === MIDDLE RINGS ===
+    // Concentric rings at harmonic intervals
+    const activeRatios = this.harmonicRatios.filter(r => r >= 1 && r <= 8);
+    const maxRatio = Math.max(...activeRatios, 4);
+
+    activeRatios.forEach((ratio, i) => {
+      const ringRadius = (ratio / maxRatio) * maxRadius * 0.65 * breathe2;
+      if (ringRadius > maxRadius * 0.1 && ringRadius < maxRadius * 0.9) {
+        // Ring with subtle modulation
+        const lobes = Math.round(ratio) * 2;
+        this.drawRing(cx, cy, ringRadius, `rgba(200, 180, 120, ALPHA)`, alpha * 0.4, 1, 0.02, lobes);
+
+        // Dot ring on each harmonic circle
+        const dotCount = symmetry * Math.max(1, Math.round(ratio));
+        this.drawDotRing(cx, cy, ringRadius, dotCount, 1.5, rot2 + i * 0.3, `rgba(218, 190, 80, ALPHA)`, alpha * 0.5);
       }
-    } else if (pattern === 'fibonacci') {
-      // Fibonacci Sequence Visualization
-      // Draw Fibonacci spiral from center
-      this.drawFibonacciSpiral(centerX, centerY, 3, 0.7 * this.amplitude, rotation);
+    });
 
-      // Draw circles at Fibonacci distances
-      const fibSequence = [1, 2, 3, 5, 8];
-      fibSequence.forEach((fib) => {
-        if (this.harmonicRatios.some(r => Math.abs(r - fib) < 0.2)) {
-          const radius = baseRadius * fib * 0.3 * pulse;
-          const alpha = 0.3 * this.amplitude;
-          this.ctx.strokeStyle = `rgba(218, 165, 32, ${alpha})`;
-          this.ctx.lineWidth = 2;
-          this.ctx.beginPath();
-          this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-          this.ctx.stroke();
-        }
-      });
-    } else if (pattern === 'sacred') {
-      // Sacred Geometry (√2, √3, √5)
-      this.drawFlowerOfLife(centerX, centerY, baseRadius * pulse, 0.5 * this.amplitude);
+    // === INNER PETAL RING ===
+    const innerPetalCount = Math.max(6, symmetry);
+    this.drawPetalRing(
+      cx, cy,
+      maxRadius * 0.25 * breathe,
+      maxRadius * 0.18,
+      innerPetalCount,
+      rot2,
+      `rgba(220, 200, 100, ALPHA)`,
+      alpha * 0.8
+    );
 
-      this.ctx.save();
-      this.ctx.translate(centerX, centerY);
-      this.ctx.rotate(rotation);
-      this.ctx.translate(-centerX, -centerY);
-      this.drawMetatronsCube(centerX, centerY, baseRadius * 1.3 * pulse, 0.6 * this.amplitude);
-      this.ctx.restore();
-    } else {
-      // Generic: Draw circles at each harmonic ratio distance
-      this.harmonicRatios.forEach((ratio, i) => {
-        if (ratio < 1) return; // Skip subharmonics for clarity
-        const radius = baseRadius * ratio * 0.4 * pulse;
-        const hue = (i * 40 + this.time * 20) % 360;
-        const alpha = 0.5 * this.amplitude;
-        this.ctx.strokeStyle = `hsla(${hue}, 70%, 60%, ${alpha})`;
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, Math.min(radius, this.width * 0.45), 0, Math.PI * 2);
-        this.ctx.stroke();
-      });
-    }
+    // === RADIAL STRUCTURE ===
+    this.drawRadials(cx, cy, maxRadius * 0.15, maxRadius * 0.92 * breathe, symmetry * 2, rot3, alpha);
 
-    // Central glow pulse
-    const glowRadius = baseRadius * 0.3 * pulse * this.amplitude;
-    const gradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowRadius * 3);
-    gradient.addColorStop(0, `rgba(218, 165, 32, ${0.8 * this.amplitude})`);
-    gradient.addColorStop(0.5, `rgba(218, 165, 32, ${0.3 * this.amplitude})`);
-    gradient.addColorStop(1, 'rgba(218, 165, 32, 0)');
+    // === INTERLOCKING TRIANGLES (Sri Yantra element) ===
+    this.drawTriangles(cx, cy, maxRadius * 0.45 * breathe, rot1 * 0.5, alpha * 0.5);
 
-    this.ctx.fillStyle = gradient;
-    this.ctx.beginPath();
-    this.ctx.arc(centerX, centerY, glowRadius * 3, 0, Math.PI * 2);
-    this.ctx.fill();
+    // === INNER GEOMETRY ===
+    // Inner circles
+    this.drawRing(cx, cy, maxRadius * 0.15 * breathe, `rgba(218, 190, 80, ALPHA)`, alpha * 0.6, 2);
+    this.drawRing(cx, cy, maxRadius * 0.08 * breathe, `rgba(240, 220, 120, ALPHA)`, alpha * 0.4, 1);
+
+    // === CENTRAL BINDU (point) ===
+    const binduRadius = maxRadius * 0.04 * breathe;
+    const binduGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, binduRadius * 3);
+    binduGradient.addColorStop(0, `rgba(255, 230, 140, ${alpha})`);
+    binduGradient.addColorStop(0.3, `rgba(218, 190, 80, ${alpha * 0.6})`);
+    binduGradient.addColorStop(1, 'rgba(218, 190, 80, 0)');
+
+    ctx.fillStyle = binduGradient;
+    ctx.beginPath();
+    ctx.arc(cx, cy, binduRadius * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Solid bindu center
+    ctx.fillStyle = `rgba(255, 240, 180, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, binduRadius, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   /**
-   * Resize canvas
+   * Determine radial symmetry from frequency/harmonics
    */
+  private getSymmetry(): number {
+    // Use number of active harmonics to influence symmetry
+    const activeCount = this.harmonicRatios.filter(r => r >= 1).length;
+
+    // Check for specific sacred numbers in ratios
+    const hasTriple = this.harmonicRatios.some(r => Math.abs(r - 3) < 0.1);
+    const hasPentagonal = this.harmonicRatios.some(r => Math.abs(r - 5) < 0.1 || Math.abs(r - 1.618) < 0.02);
+
+    if (hasPentagonal) return 10; // 5-fold doubled
+    if (hasTriple) return 12; // 6-fold doubled
+    if (activeCount >= 5) return 12;
+    if (activeCount >= 3) return 8;
+    return 6; // Default hexagonal
+  }
+
   resize(width: number, height: number): void {
     this.width = width;
     this.height = height;
@@ -359,9 +331,6 @@ export class GeometryRenderer {
     this.canvas.height = height;
   }
 
-  /**
-   * Cleanup
-   */
   destroy(): void {
     // No resources to clean up
   }
