@@ -21,7 +21,7 @@ export class ParticleSystem {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
 
-  constructor(canvas: HTMLCanvasElement, particleCount: number = 5000) {
+  constructor(canvas: HTMLCanvasElement, particleCount: number = 2000) {
     this.canvas = canvas;
     this.particleCount = particleCount;
     const ctx = canvas.getContext('2d');
@@ -167,21 +167,13 @@ export class ParticleSystem {
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.particles.forEach((particle) => {
-      const alpha = particle.brightness * (0.6 + amplitude * 0.4);
+      const alpha = particle.brightness * (0.3 + amplitude * 0.3);
 
-      // Draw particle with glow
+      // Draw particle (no extra glow - keep it subtle)
       ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
       ctx.beginPath();
       ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
       ctx.fill();
-
-      // Add glow for brighter particles
-      if (particle.brightness > 0.7) {
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.3})`;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
     });
   }
 

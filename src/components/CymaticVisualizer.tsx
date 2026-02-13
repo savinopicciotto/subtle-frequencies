@@ -111,13 +111,9 @@ export function CymaticVisualizer({
     waveRendererRef.current = null;
     geometryRendererRef.current = null;
 
-    // Clear both canvases when switching modes
-    const patternCtx = patternCanvas.getContext('2d', { willReadFrequently: false });
-    if (patternCtx) {
-      patternCtx.clearRect(0, 0, size, size);
-      patternCtx.fillStyle = '#0a0a0f';
-      patternCtx.fillRect(0, 0, size, size);
-    }
+    // Clear particle canvas when switching modes
+    // NOTE: Do NOT call getContext('2d') on patternCanvas here -
+    // it would prevent WebGL from initializing for Chladni mode
     const particleCtx = particleCanvas.getContext('2d', { willReadFrequently: false });
     if (particleCtx) {
       particleCtx.clearRect(0, 0, size, size);
