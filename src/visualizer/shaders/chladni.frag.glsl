@@ -34,25 +34,17 @@ void main() {
 
   // Create bright nodal lines where pattern ≈ 0
   // The smaller abs(pattern), the brighter the line
-  // For low mode numbers, need thicker lines to be visible
-  float modeComplexity = (u_modeN + u_modeM) / 2.0;
-  float baseThickness = 0.25; // Increased from 0.15
-  float adaptiveThickness = baseThickness / max(1.0, modeComplexity * 0.15);
-  float lineThickness = adaptiveThickness * (1.0 + u_amplitude * 0.5);
+  float lineThickness = 0.15 + u_amplitude * 0.1;
   float nodal = 1.0 - smoothstep(0.0, lineThickness, abs(pattern));
 
-  // Add stronger glow around nodal lines
-  // Boost glow for low mode numbers
-  float glowStrength = 0.5 * (1.0 + u_amplitude);
-  float glowFalloff = 6.0; // Reduced from 8.0 for wider glow
-  float glow = exp(-abs(pattern) * glowFalloff) * glowStrength;
+  // Add soft glow around nodal lines
+  float glow = exp(-abs(pattern) * 8.0) * 0.3 * (0.5 + u_amplitude * 0.5);
 
-  // Fade out at edges (circular mask) - less aggressive fade
-  float mask = smoothstep(1.0, 0.7, r);
+  // Fade out at edges (circular mask)
+  float mask = smoothstep(1.0, 0.6, r);
 
-  // Combine with boosted intensity
-  // Boost nodal line brightness and glow contribution
-  float intensity = (nodal * 1.0 + glow * 0.6) * mask;
+  // Combine: nodal lines + glow, masked by circle
+  float intensity = (nodal * 0.7 + glow) * mask;
 
   // Apply color with intensity
   vec3 finalColor = u_color * intensity;
