@@ -28,40 +28,40 @@ interface ChakraState {
 }
 
 const CHAKRAS: { freq: number; state: ChakraState }[] = [
-  { freq: 120, state: {
+  { freq: 60, state: { // Muladhara — almost infrared, deep dark red
     petals: 4, gateStyle: 1,
-    color: { r: 220, g: 50, b: 30 }, innerColor: { r: 240, g: 180, b: 50 },
-    rotSpeed: 0.02, form: 0,
+    color: { r: 140, g: 8, b: 8 }, innerColor: { r: 190, g: 45, b: 15 },
+    rotSpeed: 0.012, form: 0,
   }},
-  { freq: 300, state: {
+  { freq: 200, state: { // Svadhisthana — warm orange
     petals: 6, gateStyle: 0.7,
-    color: { r: 240, g: 140, b: 30 }, innerColor: { r: 255, g: 200, b: 60 },
-    rotSpeed: 0.025, form: 1,
+    color: { r: 235, g: 120, b: 15 }, innerColor: { r: 255, g: 185, b: 50 },
+    rotSpeed: 0.018, form: 1,
   }},
-  { freq: 450, state: {
+  { freq: 400, state: { // Manipura — golden yellow
     petals: 10, gateStyle: 0.4,
-    color: { r: 250, g: 210, b: 30 }, innerColor: { r: 255, g: 240, b: 100 },
-    rotSpeed: 0.03, form: 2.5,
+    color: { r: 250, g: 210, b: 20 }, innerColor: { r: 255, g: 240, b: 90 },
+    rotSpeed: 0.022, form: 2.5,
   }},
-  { freq: 580, state: {
+  { freq: 650, state: { // Anahata — emerald green
     petals: 12, gateStyle: 0.2,
-    color: { r: 50, g: 220, b: 100 }, innerColor: { r: 140, g: 255, b: 160 },
-    rotSpeed: 0.03, form: 3.5,
+    color: { r: 30, g: 200, b: 70 }, innerColor: { r: 100, g: 255, b: 140 },
+    rotSpeed: 0.022, form: 3.5,
   }},
-  { freq: 720, state: {
+  { freq: 1000, state: { // Vishuddha — sky blue
     petals: 16, gateStyle: 0.1,
-    color: { r: 40, g: 150, b: 255 }, innerColor: { r: 120, g: 200, b: 255 },
-    rotSpeed: 0.025, form: 4.5,
+    color: { r: 20, g: 110, b: 255 }, innerColor: { r: 80, g: 170, b: 255 },
+    rotSpeed: 0.018, form: 4.5,
   }},
-  { freq: 870, state: {
+  { freq: 1800, state: { // Ajna — deep indigo
     petals: 2, gateStyle: 0,
-    color: { r: 140, g: 60, b: 255 }, innerColor: { r: 200, g: 150, b: 255 },
-    rotSpeed: 0.02, form: 5.5,
+    color: { r: 90, g: 20, b: 255 }, innerColor: { r: 150, g: 100, b: 255 },
+    rotSpeed: 0.015, form: 5.5,
   }},
-  { freq: 1000, state: {
+  { freq: 4000, state: { // Sahasrara — almost ultraviolet
     petals: 24, gateStyle: 0,
-    color: { r: 200, g: 160, b: 255 }, innerColor: { r: 255, g: 245, b: 255 },
-    rotSpeed: 0.015, form: 6,
+    color: { r: 110, g: 0, b: 255 }, innerColor: { r: 170, g: 80, b: 255 },
+    rotSpeed: 0.01, form: 6,
   }},
 ];
 
@@ -133,7 +133,7 @@ export class GeometryRenderer {
   setHarmonicRatios(ratios: number[]): void { this.harmonicRatios = ratios; }
 
   private getChakraState(freq: number): ChakraState {
-    const f = Math.max(20, Math.min(freq, 2000));
+    const f = Math.max(20, Math.min(freq, 20000));
     if (f <= CHAKRAS[0].freq) return { ...CHAKRAS[0].state };
     if (f >= CHAKRAS[CHAKRAS.length - 1].freq) return { ...CHAKRAS[CHAKRAS.length - 1].state };
     let lo = CHAKRAS[0], hi = CHAKRAS[CHAKRAS.length - 1];
@@ -156,7 +156,7 @@ export class GeometryRenderer {
   }
 
   private updateState(dt: number): void {
-    const sp = Math.min(dt * 4.0, 0.3);
+    const sp = Math.min(dt * 1.8, 0.15); // slow morph for meditative transitions
     const c = this.current, t = this.target;
     c.petals += (t.petals - c.petals) * sp;
     c.gateStyle += (t.gateStyle - c.gateStyle) * sp;
@@ -192,7 +192,7 @@ export class GeometryRenderer {
 
     for (const sc of SACRED_CIRCLES) {
       if (form < sc.birth) continue;
-      const age = Math.min(1, (form - sc.birth) * 4.0); // fast grow-in to avoid wonky mid-growth
+      const age = Math.min(1, (form - sc.birth) * 2.5); // moderate grow-in — symmetric rings bloom together
       const r = circleR * age * breathe;
       const x = cx + sc.dx * circleR * breathe;
       const y = cy + sc.dy * circleR * breathe;
