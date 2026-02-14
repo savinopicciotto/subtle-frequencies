@@ -52,12 +52,12 @@ export class WaveRenderer {
     const radius = Math.min(this.width, this.height) * 0.3;
 
     for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2;
+      const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
       this.sources.push({
         x: centerX + Math.cos(angle) * radius,
         y: centerY + Math.sin(angle) * radius,
-        phase: Math.random() * Math.PI * 2,
-        speed: 0.5 + Math.random() * 0.5,
+        phase: (i / count) * Math.PI * 2,
+        speed: 0.3 + i * 0.15,
       });
     }
   }
@@ -81,7 +81,10 @@ export class WaveRenderer {
    */
   private calculateInterference(x: number, y: number, time: number): number {
     let sum = 0;
-    const wavelength = 50 + (1000 - this.frequency) * 0.05; // Higher freq = shorter wavelength
+    // Logarithmic wavelength: complex patterns appear across full frequency range
+    // 20Hz → ~80px wavelength, 200Hz → ~30px, 2000Hz → ~12px, 20000Hz → ~5px
+    const freq = Math.max(20, this.frequency);
+    const wavelength = 80 * Math.pow(20 / freq, 0.4);
 
     for (const source of this.sources) {
       const dx = x - source.x;

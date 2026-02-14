@@ -134,7 +134,7 @@ export function CymaticVisualizer({
         waveRendererRef.current = new WaveRenderer({
           canvas: patternCanvas,
           particleCanvas: particleCanvas,
-          sourceCount: 3,
+          sourceCount: 5,
         });
         waveRendererRef.current.updateFrequency(frequency);
         break;

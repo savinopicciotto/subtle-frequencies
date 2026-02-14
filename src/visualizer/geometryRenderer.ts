@@ -156,7 +156,7 @@ export class GeometryRenderer {
   }
 
   private updateState(dt: number): void {
-    const sp = Math.min(dt * 1.8, 0.15); // slow morph for meditative transitions
+    const sp = Math.min(dt * 0.9, 0.08); // very slow morph for meditative transitions
     const c = this.current, t = this.target;
     c.petals += (t.petals - c.petals) * sp;
     c.gateStyle += (t.gateStyle - c.gateStyle) * sp;
@@ -192,7 +192,7 @@ export class GeometryRenderer {
 
     for (const sc of SACRED_CIRCLES) {
       if (form < sc.birth) continue;
-      const age = Math.min(1, (form - sc.birth) * 2.5); // moderate grow-in — symmetric rings bloom together
+      const age = Math.min(1, (form - sc.birth) * 1.5); // slow bloom — rings expand gradually
       const r = circleR * age * breathe;
       const x = cx + sc.dx * circleR * breathe;
       const y = cy + sc.dy * circleR * breathe;
