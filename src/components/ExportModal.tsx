@@ -2,14 +2,15 @@
  * Export modal for PNG, GIF, and video export with watermarking
  */
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef } from 'react';
 import GIF from 'gif.js';
 import {
   type AudioExportParams,
-  calculateOptimalLoopDuration,
   renderAudioLoop,
+  renderStems,
   encodeWAV,
   generateAudioFilename,
+  generateStemFilename,
 } from '../audio/audioExport';
 
 interface ExportModalProps {
@@ -36,28 +37,17 @@ export function ExportModal({
   const [exportProgress, setExportProgress] = useState(0);
 
   // Audio export state
-  const [audioDuration, setAudioDuration] = useState(5);
+  const [audioDuration, setAudioDuration] = useState(20);
   const [sampleRate, setSampleRate] = useState(48000);
   const [evolutionFilter, setEvolutionFilter] = useState(true);
   const [evolutionDrift, setEvolutionDrift] = useState(true);
   const [evolutionBreathing, setEvolutionBreathing] = useState(false);
   const [evolutionSpeed, setEvolutionSpeed] = useState(0.3);
+  const [exportStems, setExportStems] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
 
-  // Calculate optimal loop duration when audio params change
-  const optimalDuration = useMemo(() => {
-    if (!audioExportParams) return 5;
-    return calculateOptimalLoopDuration(audioExportParams);
-  }, [audioExportParams]);
-
-  // Set initial audio duration to optimal
-  useEffect(() => {
-    if (optimalDuration > 0) {
-      setAudioDuration(optimalDuration);
-    }
-  }, [optimalDuration]);
 
   if (!isOpen) return null;
 
@@ -395,28 +385,53 @@ export function ExportModal({
         evolutionSpeed,
       };
 
-      // Render offline (faster than realtime)
-      const audioBuffer = await renderAudioLoop(
-        exportParams,
-        audioDuration,
-        sampleRate,
-      );
+      if (exportStems) {
+        // Render each layer as a separate WAV stem
+        setExportProgress(20);
+        const stems = await renderStems(exportParams, audioDuration, sampleRate);
+        setExportProgress(60);
 
-      setExportProgress(70);
+        // Download each stem with a short delay between for browser stability
+        for (let i = 0; i < stems.length; i++) {
+          const stem = stems[i];
+          const wavBlob = encodeWAV(stem.buffer);
+          const filename = generateStemFilename(
+            audioExportParams, stem.type, stem.label, audioDuration, sampleRate,
+          );
+          const url = URL.createObjectURL(wavBlob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.click();
+          URL.revokeObjectURL(url);
+          setExportProgress(60 + Math.round(((i + 1) / stems.length) * 30));
+          // Small delay between downloads so browser doesn't block them
+          if (i < stems.length - 1) {
+            await new Promise((r) => setTimeout(r, 500));
+          }
+        }
+      } else {
+        // Render full mix as single WAV
+        const audioBuffer = await renderAudioLoop(
+          exportParams,
+          audioDuration,
+          sampleRate,
+        );
 
-      // Encode to WAV
-      const wavBlob = encodeWAV(audioBuffer);
+        setExportProgress(70);
 
-      setExportProgress(90);
+        const wavBlob = encodeWAV(audioBuffer);
 
-      // Download
-      const filename = generateAudioFilename(audioExportParams, audioDuration, sampleRate);
-      const url = URL.createObjectURL(wavBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(url);
+        setExportProgress(90);
+
+        const filename = generateAudioFilename(audioExportParams, audioDuration, sampleRate);
+        const url = URL.createObjectURL(wavBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
 
       setExportProgress(100);
       onClose();
@@ -550,37 +565,21 @@ export function ExportModal({
         {/* Audio Export Controls */}
         {format === 'audio' && (
           <div className="space-y-4">
-            {/* Optimal loop info */}
-            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-              <div className="text-sm text-gray-300">
-                Optimal loop:{' '}
-                <span className="text-accent-gold font-semibold">
-                  {optimalDuration.toFixed(2)}s
-                </span>
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Calculated from active frequencies for seamless looping
-              </div>
-            </div>
-
             {/* Duration slider */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-gray-300">
-                  Duration: {audioDuration.toFixed(2)}s
+                  Loop Duration: {Math.round(audioDuration)}s
                 </label>
-                <button
-                  onClick={() => setAudioDuration(optimalDuration)}
-                  className="text-xs text-accent-gold hover:text-accent-amber transition-colors"
-                >
-                  Use Optimal
-                </button>
+                <span className="text-xs text-gray-500">
+                  Loop via Simpler in DAW
+                </span>
               </div>
               <input
                 type="range"
-                min="0.5"
-                max="30"
-                step="0.01"
+                min="5"
+                max="60"
+                step="1"
                 value={audioDuration}
                 onChange={(e) => setAudioDuration(parseFloat(e.target.value))}
                 disabled={isExporting}
@@ -710,6 +709,31 @@ export function ExportModal({
           </div>
         )}
 
+        {/* Stems Toggle (audio only) */}
+        {format === 'audio' && (
+          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+            <div>
+              <div className="text-sm font-medium text-gray-300">Export as Stems</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                Separate WAV per layer (same duration, mix in DAW)
+              </div>
+            </div>
+            <button
+              onClick={() => setExportStems(!exportStems)}
+              disabled={isExporting}
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                exportStems ? 'bg-accent-gold' : 'bg-white/20'
+              }`}
+            >
+              <span
+                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                  exportStems ? 'translate-x-6' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        )}
+
         {/* Watermark Toggle (not for audio) */}
         {format !== 'audio' && (
           <div className="flex items-center justify-between">
@@ -749,14 +773,15 @@ export function ExportModal({
           disabled={isExporting}
           className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isExporting ? 'Exporting...' : `Export ${format.toUpperCase()}`}
+          {isExporting ? 'Exporting...' : format === 'audio' && exportStems ? 'Export STEMS' : `Export ${format.toUpperCase()}`}
         </button>
 
         <div className="text-xs text-gray-500 text-center">
           {format === 'png' && 'High-quality still image of current pattern'}
           {format === 'gif' && 'Animated loop (requires audio playing)'}
           {format === 'video' && 'WebM video with audio visualization (requires audio playing)'}
-          {format === 'audio' && 'Lossless WAV loop for DAW import (Ableton, Logic, etc.)'}
+          {format === 'audio' && !exportStems && 'Lossless WAV — load into Simpler for infinite looping'}
+          {format === 'audio' && exportStems && 'Separate WAV per layer — load each into its own Simpler'}
         </div>
       </div>
     </div>

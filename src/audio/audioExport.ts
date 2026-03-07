@@ -37,32 +37,6 @@ export interface AudioExportParams {
   evolutionSpeed: number;    // 0-1: slow (1 cycle/loop) to fast (8 cycles/loop)
 }
 
-// ─── Smart Loop Duration ─────────────────────────────────────────────
-
-/**
- * Calculate the optimal loop duration so the waveform repeats exactly.
- *
- * Since snapRate() aligns ALL LFO rates to integer cycles per loop,
- * any duration works for LFOs. The render function also snaps duration
- * to exact cycles of the base frequency. The only real constraint is
- * the binaural beat — we want whole cycles of the beat envelope.
- *
- * Result: short, practical durations instead of LCM blowup.
- */
-export function calculateOptimalLoopDuration(
-  params: AudioExportParams,
-  minDurationSec: number = 1.0,
-): number {
-  // If binaural is active, align to whole beat cycles
-  if (params.binauralEnabled && params.binauralBeatHz > 0) {
-    const beatPeriod = 1 / params.binauralBeatHz;
-    const cycles = Math.max(1, Math.ceil(minDurationSec / beatPeriod));
-    return parseFloat((cycles * beatPeriod).toFixed(4));
-  }
-
-  // No binaural — any duration works, render snaps to base freq cycles
-  return minDurationSec;
-}
 
 // ─── Offline Graph Builders ──────────────────────────────────────────
 
@@ -385,48 +359,6 @@ function configureTextureFilter(filter: BiquadFilterNode, texture: TextureType):
   }
 }
 
-// ─── Crossfade + Trim ────────────────────────────────────────────────
-
-function applyCrossfadeAndTrim(
-  buffer: AudioBuffer,
-  crossfadeSec: number,
-  targetLength: number,
-): AudioBuffer {
-  const crossfadeSamples = Math.round(crossfadeSec * buffer.sampleRate);
-  const ctx = new OfflineAudioContext(
-    buffer.numberOfChannels,
-    targetLength,
-    buffer.sampleRate,
-  );
-  const trimmed = ctx.createBuffer(
-    buffer.numberOfChannels,
-    targetLength,
-    buffer.sampleRate,
-  );
-
-  for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
-    const src = buffer.getChannelData(ch);
-    const dst = trimmed.getChannelData(ch);
-
-    // Copy the target-length portion
-    for (let i = 0; i < targetLength; i++) {
-      dst[i] = src[i];
-    }
-
-    // Crossfade: blend tail (from after targetLength) into head
-    // Linear crossfade — better than equal-power for correlated signals
-    // (same oscillator continuing), avoids the +3dB bump
-    for (let i = 0; i < crossfadeSamples; i++) {
-      const t = i / crossfadeSamples;
-      const tailIdx = targetLength + i;
-      if (tailIdx < src.length) {
-        dst[i] = dst[i] * t + src[tailIdx] * (1 - t);
-      }
-    }
-  }
-
-  return trimmed;
-}
 
 // ─── Evolution: Master Filter Sweep + Stereo Drift ──────────────────
 
@@ -526,45 +458,111 @@ export async function renderAudioLoop(
   durationSec: number,
   sampleRate: number = 48000,
 ): Promise<AudioBuffer> {
-  // Snap duration to exact cycles of the base frequency so the sine wave
-  // is sample-aligned at the loop boundary (eliminates click from phase mismatch)
-  if (params.frequency > 0) {
-    const cycles = Math.round(durationSec * params.frequency);
-    durationSec = cycles / params.frequency;
-  }
-  // Also align to binaural beat period if active
-  if (params.binauralEnabled && params.binauralBeatHz > 0) {
-    const beatCycles = Math.max(1, Math.round(durationSec * params.binauralBeatHz));
-    durationSec = beatCycles / params.binauralBeatHz;
-  }
-
-  const crossfadeSec = 0.2; // 200ms crossfade — insurance for noise textures
-  const totalDuration = durationSec + crossfadeSec;
-  const totalSamples = Math.ceil(totalDuration * sampleRate);
-  const targetSamples = Math.round(durationSec * sampleRate);
-
+  const totalSamples = Math.round(durationSec * sampleRate);
   const offline = new OfflineAudioContext(2, totalSamples, sampleRate);
 
   const masterGain = offline.createGain();
   masterGain.gain.value = params.masterVolume;
   masterGain.connect(offline.destination);
 
-  // If any evolution toggle is on, route through the evolution chain
   const hasEvolution = params.evolutionFilter || params.evolutionDrift || params.evolutionBreathing;
   const audioTarget = hasEvolution
     ? buildEvolution(offline, masterGain, params, durationSec)
     : masterGain;
 
-  // Build the full audio graph — all sources connect to audioTarget
   buildFrequencyGraph(offline, audioTarget, params);
   buildBinauralGraph(offline, audioTarget, params);
   buildHarmonicGraph(offline, audioTarget, params, durationSec);
   buildTextureGraph(offline, audioTarget, params, durationSec);
 
-  const rendered = await offline.startRendering();
+  return offline.startRendering();
+}
 
-  // Crossfade tail → head for seamless loop
-  return applyCrossfadeAndTrim(rendered, crossfadeSec, targetSamples);
+// ─── Stem Export ─────────────────────────────────────────────────────
+
+export type StemType = 'frequency' | 'binaural' | 'harmonics' | 'texture';
+
+export interface StemResult {
+  type: StemType;
+  label: string;
+  buffer: AudioBuffer;
+}
+
+/**
+ * Render each active layer as a separate stem (same duration/alignment).
+ * Returns an array of labeled AudioBuffers for individual WAV export.
+ */
+export async function renderStems(
+  params: AudioExportParams,
+  durationSec: number,
+  sampleRate: number = 48000,
+): Promise<StemResult[]> {
+  const totalSamples = Math.round(durationSec * sampleRate);
+  const stems: StemResult[] = [];
+
+  // Stem builders — each renders one layer in isolation
+  const stemConfigs: Array<{
+    type: StemType;
+    label: string;
+    active: boolean;
+    build: (ctx: OfflineAudioContext, target: GainNode) => void;
+  }> = [
+    {
+      type: 'frequency',
+      label: `${Math.round(params.frequency)}Hz`,
+      active: params.frequencyPlaying && params.frequency > 0,
+      build: (ctx, target) => buildFrequencyGraph(ctx, target, params),
+    },
+    {
+      type: 'binaural',
+      label: `Binaural ${params.binauralBeatHz}Hz`,
+      active: params.binauralEnabled && params.binauralBeatHz > 0,
+      build: (ctx, target) => buildBinauralGraph(ctx, target, params),
+    },
+    {
+      type: 'harmonics',
+      label: `Harmonics (${params.harmonicLayers.length})`,
+      active: params.harmonicsEnabled && params.harmonicLayers.length > 0,
+      build: (ctx, target) => buildHarmonicGraph(ctx, target, params, durationSec),
+    },
+    {
+      type: 'texture',
+      label: params.textureType.charAt(0).toUpperCase() + params.textureType.slice(1),
+      active: params.textureType !== 'none' && params.textureVolume > 0,
+      build: (ctx, target) => buildTextureGraph(ctx, target, params, durationSec),
+    },
+  ];
+
+  for (const config of stemConfigs) {
+    if (!config.active) continue;
+
+    const offline = new OfflineAudioContext(2, totalSamples, sampleRate);
+    const gain = offline.createGain();
+    gain.gain.value = 1.0; // Full volume per stem — user mixes in DAW
+    gain.connect(offline.destination);
+
+    config.build(offline, gain);
+    const rendered = await offline.startRendering();
+
+    stems.push({ type: config.type, label: config.label, buffer: rendered });
+  }
+
+  return stems;
+}
+
+export function generateStemFilename(
+  params: AudioExportParams,
+  stemType: StemType,
+  stemLabel: string,
+  duration: number,
+  sampleRate: number,
+): string {
+  const parts: string[] = ['subtle-frequencies'];
+  parts.push(`${Math.round(params.frequency)}Hz`);
+  parts.push(stemType);
+  parts.push(`${duration.toFixed(1)}s`);
+  parts.push(`${Math.round(sampleRate / 1000)}k`);
+  return parts.join('_') + '.wav';
 }
 
 // ─── WAV Encoding ────────────────────────────────────────────────────
