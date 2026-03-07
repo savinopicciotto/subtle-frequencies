@@ -94,10 +94,19 @@ export class TextureEngine {
     this.source?.stop(now + 0.5);
     this.lfoOscillator?.stop(now + 0.5);
 
+    // Capture references so cleanup disconnects the OLD nodes, not new ones
+    const oldNodes = [this.source, this.gainNode, this.filterNode, this.lfoOscillator, this.lfoGain];
     setTimeout(() => {
-      this.cleanup();
+      oldNodes.forEach((node) => {
+        try { node?.disconnect(); } catch (_) { /* already disconnected */ }
+      });
     }, 600);
 
+    this.source = null;
+    this.gainNode = null;
+    this.filterNode = null;
+    this.lfoOscillator = null;
+    this.lfoGain = null;
     this.isPlaying = false;
   }
 
@@ -282,34 +291,6 @@ export class TextureEngine {
     this.lfoOscillator.start();
   }
 
-  /**
-   * Cleanup nodes
-   */
-  private cleanup(): void {
-    const nodes = [
-      this.source,
-      this.gainNode,
-      this.filterNode,
-      this.lfoOscillator,
-      this.lfoGain,
-    ];
-
-    nodes.forEach((node) => {
-      if (node) {
-        try {
-          node.disconnect();
-        } catch (e) {
-          // Already disconnected
-        }
-      }
-    });
-
-    this.source = null;
-    this.gainNode = null;
-    this.filterNode = null;
-    this.lfoOscillator = null;
-    this.lfoGain = null;
-  }
 
   /**
    * Get current state
