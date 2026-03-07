@@ -108,11 +108,11 @@ export function HarmonicLayers({
               <select
                 value={selectedRatio}
                 onChange={(e) => setSelectedRatio(parseFloat(e.target.value))}
-                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-gold/50"
+                className="w-full px-4 py-2 bg-dark-base text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-gold/50"
               >
                 {HARMONIC_SERIES.map((h) => (
-                  <option key={h.ratio} value={h.ratio}>
-                    {h.ratio}x - {h.label}
+                  <option key={h.ratio} value={h.ratio} className="bg-dark-base text-white">
+                    {h.ratio}x – {h.label}
                   </option>
                 ))}
               </select>
@@ -126,14 +126,14 @@ export function HarmonicLayers({
               <select
                 value={selectedEffect}
                 onChange={(e) => setSelectedEffect(e.target.value as HarmonicEffect)}
-                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-gold/50"
+                className="w-full px-4 py-2 bg-dark-base text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-gold/50"
               >
-                <option value="none">None (Organic Breathing)</option>
-                <option value="bend-up">Bend Up (Slow Rise)</option>
-                <option value="bend-down">Bend Down (Slow Fall)</option>
-                <option value="trickle">Trickle (Cascading Steps)</option>
-                <option value="shake">Shake (Fast Shimmer)</option>
-                <option value="buzz">Buzz (Amplitude Tremor)</option>
+                <option value="none" className="bg-dark-base text-white">None (Organic Breathing)</option>
+                <option value="bend-up" className="bg-dark-base text-white">Bend Up (Slow Rise)</option>
+                <option value="bend-down" className="bg-dark-base text-white">Bend Down (Slow Fall)</option>
+                <option value="trickle" className="bg-dark-base text-white">Trickle (Cascading Steps)</option>
+                <option value="shake" className="bg-dark-base text-white">Shake (Fast Shimmer)</option>
+                <option value="buzz" className="bg-dark-base text-white">Buzz (Amplitude Tremor)</option>
               </select>
             </div>
 
