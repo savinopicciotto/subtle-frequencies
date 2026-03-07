@@ -567,7 +567,7 @@ export function ExportModal({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-gray-300">
-                  Duration: {audioDuration.toFixed(1)}s
+                  Duration: {audioDuration.toFixed(2)}s
                 </label>
                 <button
                   onClick={() => setAudioDuration(optimalDuration)}
@@ -580,7 +580,7 @@ export function ExportModal({
                 type="range"
                 min="0.5"
                 max="30"
-                step="0.1"
+                step="0.01"
                 value={audioDuration}
                 onChange={(e) => setAudioDuration(parseFloat(e.target.value))}
                 disabled={isExporting}

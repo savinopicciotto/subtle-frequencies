@@ -1,5 +1,6 @@
 /**
  * Real-time frequency spectrometer showing FFT frequency bands
+ * with peak frequency labels
  */
 
 import { useRef, useEffect, useState } from 'react';
@@ -10,6 +11,13 @@ interface SpectrometerProps {
   frequency: number;
 }
 
+interface Peak {
+  freq: number;
+  amplitude: number;
+  x: number;
+  y: number;
+}
+
 export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
@@ -18,7 +26,6 @@ export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
   useEffect(() => {
     if (!isPlaying || !isExpanded) {
       cancelAnimationFrame(animationRef.current);
-      // Clear canvas when not playing
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -36,13 +43,13 @@ export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
       return;
     }
 
-    // Use higher FFT for better frequency resolution
-    analyser.fftSize = 2048;
+    analyser.fftSize = 4096;
     analyser.smoothingTimeConstant = 0.85;
 
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
     const sampleRate = audioEngine.getSampleRate();
+    const binWidth = sampleRate / (bufferLength * 2);
 
     const draw = () => {
       const canvas = canvasRef.current;
@@ -51,7 +58,6 @@ export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Match canvas resolution to display size
       const rect = canvas.getBoundingClientRect();
       if (canvas.width !== rect.width * 2 || canvas.height !== rect.height * 2) {
         canvas.width = rect.width * 2;
@@ -64,30 +70,26 @@ export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
 
       analyser.getByteFrequencyData(dataArray);
 
-      // Clear
       ctx.clearRect(0, 0, width, height);
-
-      // Background
       ctx.fillStyle = 'rgba(10, 10, 15, 0.6)';
       ctx.fillRect(0, 0, width, height);
 
-      // Draw frequency bars (logarithmic scale, 20Hz - 20kHz)
+      // Logarithmic frequency mapping
       const minFreq = 20;
       const maxFreq = 20000;
       const logMin = Math.log10(minFreq);
       const logMax = Math.log10(maxFreq);
       const barCount = Math.min(120, Math.floor(width / 3));
 
+      // Collect bar data for peak detection
+      const bars: Array<{ freq: number; value: number; x: number }> = [];
+
       for (let i = 0; i < barCount; i++) {
-        // Map bar index to frequency (logarithmic)
         const logFreq = logMin + (i / barCount) * (logMax - logMin);
         const freq = Math.pow(10, logFreq);
-
-        // Map frequency to FFT bin
         const bin = Math.round((freq / sampleRate) * bufferLength * 2);
         if (bin >= bufferLength) continue;
 
-        // Average a few bins for smoother display
         let value = 0;
         let count = 0;
         const spread = Math.max(1, Math.floor(bin * 0.05));
@@ -98,17 +100,78 @@ export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
         value = value / count / 255;
 
         const barWidth = Math.max(1, (width / barCount) - 1);
-        const barHeight = value * (height - 20);
+        const barHeight = value * (height - 24);
         const x = (i / barCount) * width;
         const y = height - barHeight;
 
-        // Color: amber gradient based on amplitude
         const r = Math.floor(200 + value * 55);
         const g = Math.floor(150 * value + 50);
         const b = Math.floor(20 + value * 30);
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.6 + value * 0.4})`;
         ctx.fillRect(x, y, barWidth, barHeight);
+
+        bars.push({ freq, value, x: x + barWidth / 2 });
       }
+
+      // Detect peaks: local maxima above threshold, minimum spacing
+      const peaks: Peak[] = [];
+      const peakThreshold = 0.15;
+      const minPeakSpacing = 50; // pixels
+
+      for (let i = 2; i < bars.length - 2; i++) {
+        const v = bars[i].value;
+        if (v < peakThreshold) continue;
+        if (v > bars[i - 1].value && v > bars[i + 1].value &&
+            v > bars[i - 2].value && v > bars[i + 2].value) {
+          // Find the actual FFT bin peak for more accurate frequency
+          const bin = Math.round((bars[i].freq / sampleRate) * bufferLength * 2);
+          let peakBin = bin;
+          let peakVal = dataArray[bin] || 0;
+          for (let j = Math.max(0, bin - 3); j <= Math.min(bufferLength - 1, bin + 3); j++) {
+            if (dataArray[j] > peakVal) {
+              peakVal = dataArray[j];
+              peakBin = j;
+            }
+          }
+          const preciseFreq = peakBin * binWidth;
+          const barHeight = v * (height - 24);
+
+          // Check minimum spacing from existing peaks
+          const tooClose = peaks.some((p) => Math.abs(p.x - bars[i].x) < minPeakSpacing);
+          if (!tooClose) {
+            peaks.push({
+              freq: preciseFreq,
+              amplitude: v,
+              x: bars[i].x,
+              y: height - barHeight,
+            });
+          }
+        }
+      }
+
+      // Sort by amplitude, keep top 8
+      peaks.sort((a, b) => b.amplitude - a.amplitude);
+      const topPeaks = peaks.slice(0, 8);
+
+      // Draw peak labels
+      ctx.font = '9px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      topPeaks.forEach((peak) => {
+        const label = peak.freq >= 1000
+          ? `${(peak.freq / 1000).toFixed(1)}k`
+          : `${Math.round(peak.freq)}`;
+
+        // Small dot at peak
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.beginPath();
+        ctx.arc(peak.x, peak.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Label above peak
+        const labelY = Math.max(18, peak.y - 6);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fillText(label, peak.x, labelY);
+      });
 
       // Draw fundamental frequency marker
       if (frequency > 0) {
@@ -122,12 +185,6 @@ export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
         ctx.lineTo(markerX, height);
         ctx.stroke();
         ctx.setLineDash([]);
-
-        // Label
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        ctx.font = '10px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${Math.round(frequency)}Hz`, markerX, 10);
       }
 
       // Frequency axis labels
@@ -174,7 +231,7 @@ export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
           <canvas
             ref={canvasRef}
             className="w-full rounded-lg"
-            style={{ height: '120px' }}
+            style={{ height: '150px' }}
           />
           {!isPlaying && (
             <div className="text-xs text-gray-500 text-center mt-2">

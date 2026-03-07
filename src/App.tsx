@@ -17,6 +17,7 @@ import { PresetManager } from './components/PresetManager';
 import { HarmonicLayers } from './components/HarmonicLayers';
 import { ExportModal } from './components/ExportModal';
 import { Spectrometer } from './components/Spectrometer';
+import { StatusBar } from './components/StatusBar';
 import { audioEngine } from './audio/AudioEngine';
 import type { AudioExportParams } from './audio/audioExport';
 import type { Preset } from './utils/presets';
@@ -431,6 +432,21 @@ function App() {
           frequency={frequency}
           onShareClick={handleExportClick}
           harmonicLayers={harmonicLayers}
+        />
+
+        {/* Status Bar */}
+        <StatusBar
+          isPlaying={isPlaying}
+          frequency={frequency}
+          frequencyVolume={frequencyVolume}
+          binauralEnabled={binauralEnabled}
+          binauralState={binauralState}
+          binauralBeatHz={binauralBeatHz}
+          binauralVolume={binauralVolume}
+          harmonicsEnabled={harmonicsEnabled}
+          harmonicLayers={harmonicLayers}
+          texture={texture}
+          textureVolume={textureVolume}
         />
 
         {/* Spectrometer */}
