@@ -60,7 +60,7 @@ function lcm(a: number, b: number): number {
 export function calculateOptimalLoopDuration(
   params: AudioExportParams,
   minDurationSec: number = 1.0,
-  maxDurationSec: number = 30.0,
+  maxDurationSec: number = 10.0,
 ): number {
   const MICRO = 1_000_000;
   const periods: number[] = [];

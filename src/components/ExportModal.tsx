@@ -579,7 +579,7 @@ export function ExportModal({
               <input
                 type="range"
                 min="0.5"
-                max="60"
+                max="30"
                 step="0.1"
                 value={audioDuration}
                 onChange={(e) => setAudioDuration(parseFloat(e.target.value))}
