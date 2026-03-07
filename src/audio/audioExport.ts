@@ -55,7 +55,14 @@ function lcm(a: number, b: number): number {
 
 /**
  * Calculate the optimal loop duration so the waveform repeats exactly.
- * Works in integer microseconds to avoid floating-point LCM issues.
+ *
+ * Strategy: Since snapRate() aligns all LFO rates to integer cycles per
+ * loop, we only need the loop to contain whole cycles of the LOW-frequency
+ * components (binaural beat, harmonic beat/pulse rates). The base audio
+ * frequencies (e.g. 432Hz) have periods so short (~2ms) that any duration
+ * ≥ 0.5s contains hundreds of complete cycles — they don't constrain.
+ *
+ * So optimal = LCM of the beat/pulse periods only, which stays small.
  */
 export function calculateOptimalLoopDuration(
   params: AudioExportParams,
@@ -63,40 +70,31 @@ export function calculateOptimalLoopDuration(
   maxDurationSec: number = 10.0,
 ): number {
   const MICRO = 1_000_000;
-  const periods: number[] = [];
-
-  // Base frequency period
-  if (params.frequency > 0) {
-    periods.push(Math.round(MICRO / params.frequency));
-  }
+  // Collect only the LOW-frequency beat/pulse periods (the ones that
+  // actually constrain loop length). Audio-rate frequencies are ignored
+  // because any reasonable duration contains whole cycles of them.
+  const beatPeriods: number[] = [];
 
   // Binaural beat envelope period
   if (params.binauralEnabled && params.binauralBeatHz > 0) {
-    periods.push(Math.round(MICRO / params.binauralBeatHz));
+    beatPeriods.push(Math.round(MICRO / params.binauralBeatHz));
   }
 
-  // Harmonic layers — each layer's LFO beat creates a period
+  // Harmonic layer beat/pulse LFOs only (NOT the harmonic frequency itself)
   if (params.harmonicsEnabled) {
     for (const layer of params.harmonicLayers) {
-      // The harmonic frequency itself
-      const layerFreq = params.frequency * layer.ratio;
-      if (layerFreq > 0) {
-        periods.push(Math.round(MICRO / layerFreq));
-      }
-      // The beat/tremolo LFO
       if (layer.beatFrequency > 0) {
-        periods.push(Math.round(MICRO / layer.beatFrequency));
+        beatPeriods.push(Math.round(MICRO / layer.beatFrequency));
       }
     }
   }
 
-  // Texture is noise-based — no periodic constraint
+  // No beat frequencies active — any duration works, use minimum
+  if (beatPeriods.length === 0) return minDurationSec;
 
-  if (periods.length === 0) return minDurationSec;
-
-  let combinedMicro = periods[0];
-  for (let i = 1; i < periods.length; i++) {
-    combinedMicro = lcm(combinedMicro, periods[i]);
+  let combinedMicro = beatPeriods[0];
+  for (let i = 1; i < beatPeriods.length; i++) {
+    combinedMicro = lcm(combinedMicro, beatPeriods[i]);
     if (combinedMicro > maxDurationSec * MICRO) {
       combinedMicro = maxDurationSec * MICRO;
       break;
@@ -463,12 +461,13 @@ function applyCrossfadeAndTrim(
     }
 
     // Crossfade: blend tail (from after targetLength) into head
+    // Linear crossfade — better than equal-power for correlated signals
+    // (same oscillator continuing), avoids the +3dB bump
     for (let i = 0; i < crossfadeSamples; i++) {
       const t = i / crossfadeSamples;
       const tailIdx = targetLength + i;
       if (tailIdx < src.length) {
-        // Equal-power crossfade
-        dst[i] = dst[i] * Math.sqrt(t) + src[tailIdx] * Math.sqrt(1 - t);
+        dst[i] = dst[i] * t + src[tailIdx] * (1 - t);
       }
     }
   }
@@ -574,10 +573,22 @@ export async function renderAudioLoop(
   durationSec: number,
   sampleRate: number = 48000,
 ): Promise<AudioBuffer> {
+  // Snap duration to exact cycles of the base frequency so the sine wave
+  // is sample-aligned at the loop boundary (eliminates click from phase mismatch)
+  if (params.frequency > 0) {
+    const cycles = Math.round(durationSec * params.frequency);
+    durationSec = cycles / params.frequency;
+  }
+  // Also align to binaural beat period if active
+  if (params.binauralEnabled && params.binauralBeatHz > 0) {
+    const beatCycles = Math.max(1, Math.round(durationSec * params.binauralBeatHz));
+    durationSec = beatCycles / params.binauralBeatHz;
+  }
+
   const crossfadeSec = 0.2; // 200ms crossfade — insurance for noise textures
   const totalDuration = durationSec + crossfadeSec;
   const totalSamples = Math.ceil(totalDuration * sampleRate);
-  const targetSamples = Math.ceil(durationSec * sampleRate);
+  const targetSamples = Math.round(durationSec * sampleRate);
 
   const offline = new OfflineAudioContext(2, totalSamples, sampleRate);
 
