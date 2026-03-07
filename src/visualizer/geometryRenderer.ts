@@ -105,10 +105,8 @@ export class GeometryRenderer {
   private ctx: CanvasRenderingContext2D;
   private width: number;
   private height: number;
-  private frequency: number = 432;
   private amplitude: number = 0.5;
   private time: number = 0;
-  private harmonicRatios: number[] = [];
   private current: ChakraState;
   private target: ChakraState;
 
@@ -125,12 +123,11 @@ export class GeometryRenderer {
   }
 
   updateFrequency(frequency: number): void {
-    this.frequency = frequency;
     this.target = this.getChakraState(frequency);
   }
 
   setAmplitude(amplitude: number): void { this.amplitude = amplitude; }
-  setHarmonicRatios(ratios: number[]): void { this.harmonicRatios = ratios; }
+  setHarmonicRatios(_ratios: number[]): void { /* reserved for future use */ }
 
   private getChakraState(freq: number): ChakraState {
     const f = Math.max(20, Math.min(freq, 20000));
