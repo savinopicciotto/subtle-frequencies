@@ -2,23 +2,32 @@
  * Export modal for PNG, GIF, and video export with watermarking
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import GIF from 'gif.js';
+import {
+  type AudioExportParams,
+  calculateOptimalLoopDuration,
+  renderAudioLoop,
+  encodeWAV,
+  generateAudioFilename,
+} from '../audio/audioExport';
 
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   frequency: number;
   isPlaying: boolean;
+  audioExportParams?: AudioExportParams;
 }
 
-type ExportFormat = 'png' | 'gif' | 'video';
+type ExportFormat = 'png' | 'gif' | 'video' | 'audio';
 
 export function ExportModal({
   isOpen,
   onClose,
   frequency,
   isPlaying,
+  audioExportParams,
 }: ExportModalProps) {
   const [format, setFormat] = useState<ExportFormat>('png');
   const [watermark, setWatermark] = useState(true);
@@ -26,8 +35,29 @@ export function ExportModal({
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
 
+  // Audio export state
+  const [audioDuration, setAudioDuration] = useState(5);
+  const [sampleRate, setSampleRate] = useState(48000);
+  const [evolutionFilter, setEvolutionFilter] = useState(true);
+  const [evolutionDrift, setEvolutionDrift] = useState(true);
+  const [evolutionBreathing, setEvolutionBreathing] = useState(false);
+  const [evolutionSpeed, setEvolutionSpeed] = useState(0.3);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+
+  // Calculate optimal loop duration when audio params change
+  const optimalDuration = useMemo(() => {
+    if (!audioExportParams) return 5;
+    return calculateOptimalLoopDuration(audioExportParams);
+  }, [audioExportParams]);
+
+  // Set initial audio duration to optimal
+  useEffect(() => {
+    if (optimalDuration > 0) {
+      setAudioDuration(optimalDuration);
+    }
+  }, [optimalDuration]);
 
   if (!isOpen) return null;
 
@@ -335,6 +365,71 @@ export function ExportModal({
   };
 
   /**
+   * Export as WAV audio loop
+   */
+  const exportAudio = async () => {
+    try {
+      setIsExporting(true);
+      setExportProgress(10);
+
+      if (!isPlaying) {
+        alert('Please start playing audio before exporting');
+        setIsExporting(false);
+        return;
+      }
+
+      if (!audioExportParams) {
+        alert('Audio export parameters not available');
+        setIsExporting(false);
+        return;
+      }
+
+      setExportProgress(20);
+
+      // Merge evolution toggles into params
+      const exportParams = {
+        ...audioExportParams,
+        evolutionFilter,
+        evolutionDrift,
+        evolutionBreathing,
+        evolutionSpeed,
+      };
+
+      // Render offline (faster than realtime)
+      const audioBuffer = await renderAudioLoop(
+        exportParams,
+        audioDuration,
+        sampleRate,
+      );
+
+      setExportProgress(70);
+
+      // Encode to WAV
+      const wavBlob = encodeWAV(audioBuffer);
+
+      setExportProgress(90);
+
+      // Download
+      const filename = generateAudioFilename(audioExportParams, audioDuration, sampleRate);
+      const url = URL.createObjectURL(wavBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      setExportProgress(100);
+      onClose();
+    } catch (error) {
+      console.error('Failed to export audio:', error);
+      alert('Failed to export audio loop. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setExportProgress(0);
+    }
+  };
+
+  /**
    * Handle export based on selected format
    */
   const handleExport = () => {
@@ -347,6 +442,9 @@ export function ExportModal({
         break;
       case 'video':
         exportVideo();
+        break;
+      case 'audio':
+        exportAudio();
         break;
     }
   };
@@ -381,11 +479,11 @@ export function ExportModal({
         {/* Format Selection */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-300">Export Format</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <button
               onClick={() => setFormat('png')}
               disabled={isExporting}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 format === 'png'
                   ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-dark-base'
                   : 'bg-white/10 hover:bg-white/20 border border-white/20'
@@ -396,7 +494,7 @@ export function ExportModal({
             <button
               onClick={() => setFormat('gif')}
               disabled={isExporting}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 format === 'gif'
                   ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-dark-base'
                   : 'bg-white/10 hover:bg-white/20 border border-white/20'
@@ -407,13 +505,24 @@ export function ExportModal({
             <button
               onClick={() => setFormat('video')}
               disabled={isExporting}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 format === 'video'
                   ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-dark-base'
                   : 'bg-white/10 hover:bg-white/20 border border-white/20'
               }`}
             >
               Video
+            </button>
+            <button
+              onClick={() => setFormat('audio')}
+              disabled={isExporting}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                format === 'audio'
+                  ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-dark-base'
+                  : 'bg-white/10 hover:bg-white/20 border border-white/20'
+              }`}
+            >
+              WAV
             </button>
           </div>
         </div>
@@ -438,23 +547,188 @@ export function ExportModal({
           </div>
         )}
 
-        {/* Watermark Toggle */}
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-300">Add Watermark</label>
-          <button
-            onClick={() => setWatermark(!watermark)}
-            disabled={isExporting}
-            className={`relative w-12 h-6 rounded-full transition-colors ${
-              watermark ? 'bg-accent-gold' : 'bg-white/20'
-            }`}
-          >
-            <span
-              className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                watermark ? 'translate-x-6' : 'translate-x-0'
+        {/* Audio Export Controls */}
+        {format === 'audio' && (
+          <div className="space-y-4">
+            {/* Optimal loop info */}
+            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+              <div className="text-sm text-gray-300">
+                Optimal loop:{' '}
+                <span className="text-accent-gold font-semibold">
+                  {optimalDuration.toFixed(2)}s
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Calculated from active frequencies for seamless looping
+              </div>
+            </div>
+
+            {/* Duration slider */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-300">
+                  Duration: {audioDuration.toFixed(1)}s
+                </label>
+                <button
+                  onClick={() => setAudioDuration(optimalDuration)}
+                  className="text-xs text-accent-gold hover:text-accent-amber transition-colors"
+                >
+                  Use Optimal
+                </button>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="60"
+                step="0.1"
+                value={audioDuration}
+                onChange={(e) => setAudioDuration(parseFloat(e.target.value))}
+                disabled={isExporting}
+                className="slider"
+              />
+            </div>
+
+            {/* Sample rate */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-300">Sample Rate</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setSampleRate(44100)}
+                  disabled={isExporting}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    sampleRate === 44100
+                      ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-dark-base'
+                      : 'bg-white/10 hover:bg-white/20 border border-white/20'
+                  }`}
+                >
+                  44.1 kHz
+                </button>
+                <button
+                  onClick={() => setSampleRate(48000)}
+                  disabled={isExporting}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    sampleRate === 48000
+                      ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-dark-base'
+                      : 'bg-white/10 hover:bg-white/20 border border-white/20'
+                  }`}
+                >
+                  48 kHz
+                </button>
+              </div>
+            </div>
+
+            {/* Evolution toggles */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-300">Loop Evolution</label>
+              <div className="space-y-2">
+                {/* Filter sweep */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-gray-300">Filter Sweep</span>
+                    <p className="text-xs text-gray-500">Slow lowpass movement</p>
+                  </div>
+                  <button
+                    onClick={() => setEvolutionFilter(!evolutionFilter)}
+                    disabled={isExporting}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${
+                      evolutionFilter ? 'bg-accent-gold' : 'bg-white/20'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                        evolutionFilter ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Stereo drift */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-gray-300">Stereo Drift</span>
+                    <p className="text-xs text-gray-500">Subtle L/R panning</p>
+                  </div>
+                  <button
+                    onClick={() => setEvolutionDrift(!evolutionDrift)}
+                    disabled={isExporting}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${
+                      evolutionDrift ? 'bg-accent-gold' : 'bg-white/20'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                        evolutionDrift ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Volume breathing */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-gray-300">Breathing</span>
+                    <p className="text-xs text-gray-500">Slow volume swell</p>
+                  </div>
+                  <button
+                    onClick={() => setEvolutionBreathing(!evolutionBreathing)}
+                    disabled={isExporting}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${
+                      evolutionBreathing ? 'bg-accent-gold' : 'bg-white/20'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                        evolutionBreathing ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Speed slider — only show if any evolution is on */}
+              {(evolutionFilter || evolutionDrift || evolutionBreathing) && (
+                <div className="space-y-1 pt-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-gray-400">Speed</label>
+                    <span className="text-xs text-gray-500">
+                      {evolutionSpeed < 0.3 ? 'Slow' : evolutionSpeed < 0.7 ? 'Medium' : 'Fast'}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={evolutionSpeed}
+                    onChange={(e) => setEvolutionSpeed(parseFloat(e.target.value))}
+                    disabled={isExporting}
+                    className="slider"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Watermark Toggle (not for audio) */}
+        {format !== 'audio' && (
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-300">Add Watermark</label>
+            <button
+              onClick={() => setWatermark(!watermark)}
+              disabled={isExporting}
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                watermark ? 'bg-accent-gold' : 'bg-white/20'
               }`}
-            />
-          </button>
-        </div>
+            >
+              <span
+                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                  watermark ? 'translate-x-6' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        )}
 
         {/* Progress Bar */}
         {isExporting && (
@@ -482,6 +756,7 @@ export function ExportModal({
           {format === 'png' && 'High-quality still image of current pattern'}
           {format === 'gif' && 'Animated loop (requires audio playing)'}
           {format === 'video' && 'WebM video with audio visualization (requires audio playing)'}
+          {format === 'audio' && 'Lossless WAV loop for DAW import (Ableton, Logic, etc.)'}
         </div>
       </div>
     </div>

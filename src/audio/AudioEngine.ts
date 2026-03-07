@@ -110,6 +110,13 @@ export class AudioEngine {
   }
 
   /**
+   * Get the sample rate of the current audio context
+   */
+  getSampleRate(): number {
+    return this.context?.sampleRate ?? 48000;
+  }
+
+  /**
    * Get analyser node for visualizations
    */
   getAnalyser(): AnalyserNode {

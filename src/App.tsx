@@ -16,6 +16,8 @@ import { SessionTimer } from './components/SessionTimer';
 import { PresetManager } from './components/PresetManager';
 import { HarmonicLayers } from './components/HarmonicLayers';
 import { ExportModal } from './components/ExportModal';
+import { audioEngine } from './audio/AudioEngine';
+import type { AudioExportParams } from './audio/audioExport';
 import type { Preset } from './utils/presets';
 import type { BrainwaveState } from './audio/binauralEngine';
 import type { TextureType } from './audio/textureEngine';
@@ -109,6 +111,32 @@ function App() {
     if (isPlaying) {
       frequencyEngine.current.updateVolume(vol);
     }
+  };
+
+  // Build audio export params from current state
+  const audioExportParams: AudioExportParams = {
+    masterVolume: audioEngine.getMasterVolume(),
+    frequency,
+    frequencyVolume,
+    frequencyPlaying: isPlaying,
+    binauralEnabled,
+    binauralBaseFreq: frequency,
+    binauralBeatHz,
+    binauralVolume,
+    harmonicsEnabled,
+    harmonicLayers: harmonicLayers.map((l) => ({
+      ratio: l.ratio,
+      beatFrequency: l.beatFrequency,
+      volume: l.volume,
+      effect: l.effect,
+    })),
+    textureType: texture,
+    textureVolume,
+    // Evolution defaults — controlled by ExportModal toggles
+    evolutionFilter: false,
+    evolutionDrift: false,
+    evolutionBreathing: false,
+    evolutionSpeed: 0.3,
   };
 
   // Handle export modal
@@ -463,6 +491,7 @@ function App() {
         onClose={() => setShowExportModal(false)}
         frequency={frequency}
         isPlaying={isPlaying}
+        audioExportParams={audioExportParams}
       />
     </div>
   );
