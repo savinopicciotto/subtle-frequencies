@@ -13,6 +13,7 @@ interface HarmonicLayer {
   volume: number;
   effect: HarmonicEffect;
   label: string;
+  muted: boolean;
 }
 
 interface HarmonicLayersProps {
@@ -23,6 +24,7 @@ interface HarmonicLayersProps {
   onRemoveLayer: (index: number) => void;
   onUpdateLayerBeat: (index: number, beatFreq: number) => void;
   onUpdateLayerVolume: (index: number, volume: number) => void;
+  onToggleLayerMute: (index: number) => void;
   onLoadPreset: (layers: Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect }>) => void;
 }
 
@@ -34,6 +36,7 @@ export function HarmonicLayers({
   onRemoveLayer,
   onUpdateLayerBeat,
   onUpdateLayerVolume,
+  onToggleLayerMute,
   onLoadPreset,
 }: HarmonicLayersProps) {
   const [selectedRatio, setSelectedRatio] = useState(2); // Default: Octave
@@ -196,7 +199,7 @@ export function HarmonicLayers({
                       className="p-3 bg-white/5 rounded-lg border border-white/10 space-y-2"
                     >
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className={layer.muted ? 'opacity-40' : ''}>
                           <div className="font-semibold text-sm">
                             {layer.ratio}x - {harmonic?.label || layer.label}
                           </div>
@@ -206,16 +209,29 @@ export function HarmonicLayers({
                             </div>
                           )}
                         </div>
-                        <button
-                          onClick={() => onRemoveLayer(index)}
-                          className="px-2 py-1 text-xs text-red-400 hover:text-red-300"
-                        >
-                          Remove
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => onToggleLayerMute(index)}
+                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                              layer.muted
+                                ? 'text-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20'
+                                : 'text-gray-400 hover:text-white hover:bg-white/10'
+                            }`}
+                            title={layer.muted ? 'Unmute' : 'Mute'}
+                          >
+                            {layer.muted ? 'Muted' : 'On'}
+                          </button>
+                          <button
+                            onClick={() => onRemoveLayer(index)}
+                            className="px-2 py-1 text-xs text-red-400 hover:text-red-300"
+                          >
+                            ×
+                          </button>
+                        </div>
                       </div>
 
                       {/* Beat Frequency Control */}
-                      <div className="space-y-1">
+                      <div className={`space-y-1 ${layer.muted ? 'opacity-40 pointer-events-none' : ''}`}>
                         <label className="text-xs text-gray-400">
                           Pulse: {layer.beatFrequency.toFixed(1)} Hz
                         </label>
@@ -233,7 +249,7 @@ export function HarmonicLayers({
                       </div>
 
                       {/* Volume Control */}
-                      <div className="space-y-1">
+                      <div className={`space-y-1 ${layer.muted ? 'opacity-40 pointer-events-none' : ''}`}>
                         <label className="text-xs text-gray-400">
                           Volume: {Math.round(layer.volume * 100)}%
                         </label>

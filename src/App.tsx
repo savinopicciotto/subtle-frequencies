@@ -16,6 +16,7 @@ import { SessionTimer } from './components/SessionTimer';
 import { PresetManager } from './components/PresetManager';
 import { HarmonicLayers } from './components/HarmonicLayers';
 import { ExportModal } from './components/ExportModal';
+import { Spectrometer } from './components/Spectrometer';
 import { audioEngine } from './audio/AudioEngine';
 import type { AudioExportParams } from './audio/audioExport';
 import type { Preset } from './utils/presets';
@@ -44,7 +45,7 @@ function App() {
   const [textureVolume, setTextureVolume] = useState(0.2);
   const [harmonicsEnabled, setHarmonicsEnabled] = useState(false);
   const [harmonicLayers, setHarmonicLayers] = useState<
-    Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect; label: string }>
+    Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect; label: string; muted: boolean }>
   >([]);
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -124,7 +125,7 @@ function App() {
     binauralBeatHz,
     binauralVolume,
     harmonicsEnabled,
-    harmonicLayers: harmonicLayers.map((l) => ({
+    harmonicLayers: harmonicLayers.filter((l) => !l.muted).map((l) => ({
       ratio: l.ratio,
       beatFrequency: l.beatFrequency,
       volume: l.volume,
@@ -214,7 +215,7 @@ function App() {
   const handleAddHarmonicLayer = (ratio: number, beatFreq: number, volume: number, effect: HarmonicEffect) => {
     // Add to state
     const label = `${ratio}x Harmonic`;
-    const newLayer = { ratio, beatFrequency: beatFreq, volume, effect, label };
+    const newLayer = { ratio, beatFrequency: beatFreq, volume, effect, label, muted: false };
     const newLayers = [...harmonicLayers, newLayer];
     setHarmonicLayers(newLayers);
 
@@ -240,6 +241,7 @@ function App() {
     const layersWithLabels = layers.map((layer) => ({
       ...layer,
       label: `${layer.ratio}x Harmonic`,
+      muted: false,
     }));
     setHarmonicLayers(layersWithLabels);
 
@@ -297,6 +299,15 @@ function App() {
     newLayers[index].volume = volume;
     setHarmonicLayers(newLayers);
     harmonicEngine.current.updateLayerVolume(index, volume);
+  };
+
+  // Toggle mute on a harmonic layer
+  const handleToggleHarmonicMute = (index: number) => {
+    const newLayers = [...harmonicLayers];
+    const layer = newLayers[index];
+    layer.muted = !layer.muted;
+    setHarmonicLayers(newLayers);
+    harmonicEngine.current.updateLayerVolume(index, layer.muted ? 0 : layer.volume);
   };
 
   // Handle timer end
@@ -422,6 +433,9 @@ function App() {
           harmonicLayers={harmonicLayers}
         />
 
+        {/* Spectrometer */}
+        <Spectrometer isPlaying={isPlaying} frequency={frequency} />
+
         {/* Main Controls */}
         <FrequencyPlayer
           frequency={frequency}
@@ -461,6 +475,7 @@ function App() {
           onRemoveLayer={handleRemoveHarmonicLayer}
           onUpdateLayerBeat={handleUpdateHarmonicBeat}
           onUpdateLayerVolume={handleUpdateHarmonicVolume}
+          onToggleLayerMute={handleToggleHarmonicMute}
           onLoadPreset={handleLoadHarmonicPreset}
         />
 
