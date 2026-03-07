@@ -170,10 +170,20 @@ function buildBinauralGraph(
   rightOsc.start(0);
 }
 
+/**
+ * Snap a desired LFO rate to the nearest integer-cycle-per-loop rate.
+ * Guarantees the oscillator completes exact whole cycles within the loop.
+ */
+function snapRate(desiredHz: number, durationSec: number): number {
+  const cycles = Math.max(1, Math.round(desiredHz * durationSec));
+  return cycles / durationSec;
+}
+
 function buildHarmonicGraph(
   ctx: OfflineAudioContext,
   master: GainNode,
   params: AudioExportParams,
+  durationSec: number,
 ): void {
   if (!params.harmonicsEnabled || params.harmonicLayers.length === 0) return;
 
@@ -192,40 +202,42 @@ function buildHarmonicGraph(
     const gain = ctx.createGain();
     gain.gain.value = layer.volume;
 
-    // Breathing modulation — fixed rate per layer index (deterministic)
+    // Breathing modulation — snapped to loop duration
     const breathingOsc = ctx.createOscillator();
     const breathingGain = ctx.createGain();
     breathingOsc.type = 'sine';
-    breathingOsc.frequency.value = 0.08 + (idx * 0.03) % 0.1; // 0.08–0.18 Hz
+    const desiredBreathRate = 0.08 + (idx * 0.03) % 0.1; // 0.08–0.18 Hz
+    breathingOsc.frequency.value = snapRate(desiredBreathRate, durationSec);
     breathingGain.gain.value = layer.volume * 0.2;
     breathingOsc.connect(breathingGain);
     breathingGain.connect(gain.gain);
     breathingOsc.start(0);
 
-    // Vibrato — fixed rate per layer index
+    // Vibrato — snapped to loop duration
     const vibratoOsc = ctx.createOscillator();
     const vibratoGain = ctx.createGain();
     vibratoOsc.type = 'triangle';
-    vibratoOsc.frequency.value = 2.5 + (idx * 0.5) % 1.5; // 2.5–4 Hz
+    const desiredVibratoRate = 2.5 + (idx * 0.5) % 1.5; // 2.5–4 Hz
+    vibratoOsc.frequency.value = snapRate(desiredVibratoRate, durationSec);
     vibratoGain.gain.value = 3 + (idx % 3); // 3–5 cents
     vibratoOsc.connect(vibratoGain);
     vibratoGain.connect(osc.detune);
     vibratoOsc.start(0);
 
-    // Beat/tremolo LFO
+    // Beat/tremolo LFO — snapped to loop duration
     if (layer.beatFrequency > 0) {
       const lfoOsc = ctx.createOscillator();
       const lfoGain = ctx.createGain();
       lfoOsc.type = 'sine';
-      lfoOsc.frequency.value = layer.beatFrequency;
+      lfoOsc.frequency.value = snapRate(layer.beatFrequency, durationSec);
       lfoGain.gain.value = layer.volume * 0.4;
       lfoOsc.connect(lfoGain);
       lfoGain.connect(gain.gain);
       lfoOsc.start(0);
     }
 
-    // Special effects (deterministic rates)
-    applyOfflineEffect(ctx, osc, gain, layer.effect, layer.volume, idx);
+    // Special effects — snapped to loop duration
+    applyOfflineEffect(ctx, osc, gain, layer.effect, layer.volume, idx, durationSec);
 
     osc.connect(gain);
     gain.connect(master);
@@ -240,6 +252,7 @@ function applyOfflineEffect(
   effect: HarmonicEffect,
   volume: number,
   idx: number,
+  durationSec: number,
 ): void {
   if (effect === 'none') return;
 
@@ -249,35 +262,35 @@ function applyOfflineEffect(
   switch (effect) {
     case 'bend-up':
       effectOsc.type = 'sawtooth';
-      effectOsc.frequency.value = 0.05 + (idx * 0.02) % 0.05;
+      effectOsc.frequency.value = snapRate(0.05 + (idx * 0.02) % 0.05, durationSec);
       effectGain.gain.value = 30 + (idx * 7) % 20;
       effectOsc.connect(effectGain);
       effectGain.connect(osc.detune);
       break;
     case 'bend-down':
       effectOsc.type = 'sawtooth';
-      effectOsc.frequency.value = 0.05 + (idx * 0.02) % 0.05;
+      effectOsc.frequency.value = snapRate(0.05 + (idx * 0.02) % 0.05, durationSec);
       effectGain.gain.value = -(30 + (idx * 7) % 20);
       effectOsc.connect(effectGain);
       effectGain.connect(osc.detune);
       break;
     case 'trickle':
       effectOsc.type = 'square';
-      effectOsc.frequency.value = 0.2 + (idx * 0.1) % 0.3;
+      effectOsc.frequency.value = snapRate(0.2 + (idx * 0.1) % 0.3, durationSec);
       effectGain.gain.value = 15 + (idx * 4) % 10;
       effectOsc.connect(effectGain);
       effectGain.connect(osc.detune);
       break;
     case 'shake':
       effectOsc.type = 'triangle';
-      effectOsc.frequency.value = 10 + (idx * 3) % 10;
+      effectOsc.frequency.value = snapRate(10 + (idx * 3) % 10, durationSec);
       effectGain.gain.value = 8 + (idx * 3) % 7;
       effectOsc.connect(effectGain);
       effectGain.connect(osc.detune);
       break;
     case 'buzz':
       effectOsc.type = 'sine';
-      effectOsc.frequency.value = 40 + (idx * 13) % 40;
+      effectOsc.frequency.value = snapRate(40 + (idx * 13) % 40, durationSec);
       effectGain.gain.value = volume * 0.3;
       effectOsc.connect(effectGain);
       effectGain.connect(gain.gain);
@@ -291,6 +304,7 @@ function buildTextureGraph(
   ctx: OfflineAudioContext,
   master: GainNode,
   params: AudioExportParams,
+  durationSec: number,
 ): void {
   if (params.textureType === 'none') return;
 
@@ -330,16 +344,16 @@ function buildTextureGraph(
   source.connect(filter);
   filter.connect(gain);
 
-  // LFO for warm-pad / ocean
+  // LFO for warm-pad / ocean — snapped to loop duration
   if (params.textureType === 'warm-pad' || params.textureType === 'ocean') {
     const lfo = ctx.createOscillator();
     const lfoGain = ctx.createGain();
     lfo.type = 'sine';
     if (params.textureType === 'warm-pad') {
-      lfo.frequency.value = 0.2;
+      lfo.frequency.value = snapRate(0.2, durationSec);
       lfoGain.gain.value = 0.05;
     } else {
-      lfo.frequency.value = 0.15;
+      lfo.frequency.value = snapRate(0.15, durationSec);
       lfoGain.gain.value = 0.1;
     }
     lfo.connect(lfoGain);
@@ -560,7 +574,7 @@ export async function renderAudioLoop(
   durationSec: number,
   sampleRate: number = 48000,
 ): Promise<AudioBuffer> {
-  const crossfadeSec = 0.05; // 50ms crossfade for seamless looping
+  const crossfadeSec = 0.2; // 200ms crossfade — insurance for noise textures
   const totalDuration = durationSec + crossfadeSec;
   const totalSamples = Math.ceil(totalDuration * sampleRate);
   const targetSamples = Math.ceil(durationSec * sampleRate);
@@ -580,8 +594,8 @@ export async function renderAudioLoop(
   // Build the full audio graph — all sources connect to audioTarget
   buildFrequencyGraph(offline, audioTarget, params);
   buildBinauralGraph(offline, audioTarget, params);
-  buildHarmonicGraph(offline, audioTarget, params);
-  buildTextureGraph(offline, audioTarget, params);
+  buildHarmonicGraph(offline, audioTarget, params, durationSec);
+  buildTextureGraph(offline, audioTarget, params, durationSec);
 
   const rendered = await offline.startRendering();
 
