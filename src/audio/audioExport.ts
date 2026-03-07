@@ -39,76 +39,29 @@ export interface AudioExportParams {
 
 // ─── Smart Loop Duration ─────────────────────────────────────────────
 
-function gcd(a: number, b: number): number {
-  a = Math.abs(Math.round(a));
-  b = Math.abs(Math.round(b));
-  while (b) {
-    [a, b] = [b, a % b];
-  }
-  return a;
-}
-
-function lcm(a: number, b: number): number {
-  if (a === 0 || b === 0) return 0;
-  return (a / gcd(a, b)) * b;
-}
-
 /**
  * Calculate the optimal loop duration so the waveform repeats exactly.
  *
- * Strategy: Since snapRate() aligns all LFO rates to integer cycles per
- * loop, we only need the loop to contain whole cycles of the LOW-frequency
- * components (binaural beat, harmonic beat/pulse rates). The base audio
- * frequencies (e.g. 432Hz) have periods so short (~2ms) that any duration
- * ≥ 0.5s contains hundreds of complete cycles — they don't constrain.
+ * Since snapRate() aligns ALL LFO rates to integer cycles per loop,
+ * any duration works for LFOs. The render function also snaps duration
+ * to exact cycles of the base frequency. The only real constraint is
+ * the binaural beat — we want whole cycles of the beat envelope.
  *
- * So optimal = LCM of the beat/pulse periods only, which stays small.
+ * Result: short, practical durations instead of LCM blowup.
  */
 export function calculateOptimalLoopDuration(
   params: AudioExportParams,
   minDurationSec: number = 1.0,
-  maxDurationSec: number = 10.0,
 ): number {
-  const MICRO = 1_000_000;
-  // Collect only the LOW-frequency beat/pulse periods (the ones that
-  // actually constrain loop length). Audio-rate frequencies are ignored
-  // because any reasonable duration contains whole cycles of them.
-  const beatPeriods: number[] = [];
-
-  // Binaural beat envelope period
+  // If binaural is active, align to whole beat cycles
   if (params.binauralEnabled && params.binauralBeatHz > 0) {
-    beatPeriods.push(Math.round(MICRO / params.binauralBeatHz));
+    const beatPeriod = 1 / params.binauralBeatHz;
+    const cycles = Math.max(1, Math.ceil(minDurationSec / beatPeriod));
+    return parseFloat((cycles * beatPeriod).toFixed(4));
   }
 
-  // Harmonic layer beat/pulse LFOs only (NOT the harmonic frequency itself)
-  if (params.harmonicsEnabled) {
-    for (const layer of params.harmonicLayers) {
-      if (layer.beatFrequency > 0) {
-        beatPeriods.push(Math.round(MICRO / layer.beatFrequency));
-      }
-    }
-  }
-
-  // No beat frequencies active — any duration works, use minimum
-  if (beatPeriods.length === 0) return minDurationSec;
-
-  let combinedMicro = beatPeriods[0];
-  for (let i = 1; i < beatPeriods.length; i++) {
-    combinedMicro = lcm(combinedMicro, beatPeriods[i]);
-    if (combinedMicro > maxDurationSec * MICRO) {
-      combinedMicro = maxDurationSec * MICRO;
-      break;
-    }
-  }
-
-  let durationSec = combinedMicro / MICRO;
-
-  // Scale up to meet minimum
-  if (durationSec < minDurationSec) {
-    durationSec *= Math.ceil(minDurationSec / durationSec);
-  }
-
-  return Math.min(durationSec, maxDurationSec);
+  // No binaural — any duration works, render snaps to base freq cycles
+  return minDurationSec;
 }
 
 // ─── Offline Graph Builders ──────────────────────────────────────────
