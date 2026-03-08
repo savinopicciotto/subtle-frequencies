@@ -10,14 +10,13 @@ export class FrequencyEngine {
   private gainNode: GainNode | null = null;
   private currentFrequency = 432;
   private currentVolume = 0.5;
-  private currentTimbre: TimbreType = 'sine';
   private isPlaying = false;
 
   /**
    * Start playing the frequency with fade in
    */
   start(frequency: number, volume: number = 0.5, timbre: TimbreType = 'sine'): void {
-    this.currentTimbre = timbre;
+
     if (this.isPlaying) {
       this.updateFrequency(frequency);
       this.updateVolume(volume);
@@ -96,7 +95,7 @@ export class FrequencyEngine {
    * Update timbre (requires restart to take effect)
    */
   updateTimbre(timbre: TimbreType): void {
-    this.currentTimbre = timbre;
+
     if (this.isPlaying && this.oscillator) {
       const context = audioEngine.getContext();
       applyTimbre(this.oscillator, context, timbre);

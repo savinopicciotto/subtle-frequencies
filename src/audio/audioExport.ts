@@ -556,7 +556,7 @@ export async function renderStems(
 export function generateStemFilename(
   params: AudioExportParams,
   stemType: StemType,
-  stemLabel: string,
+  _stemLabel: string,
   duration: number,
   sampleRate: number,
 ): string {
