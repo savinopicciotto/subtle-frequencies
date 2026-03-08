@@ -3,18 +3,21 @@
  */
 
 import { audioEngine } from './AudioEngine';
+import { type TimbreType, applyTimbre } from './timbres';
 
 export class FrequencyEngine {
   private oscillator: OscillatorNode | null = null;
   private gainNode: GainNode | null = null;
-  private currentFrequency = 432; // Default to 432Hz
+  private currentFrequency = 432;
   private currentVolume = 0.5;
+  private currentTimbre: TimbreType = 'sine';
   private isPlaying = false;
 
   /**
    * Start playing the frequency with fade in
    */
-  start(frequency: number, volume: number = 0.5): void {
+  start(frequency: number, volume: number = 0.5, timbre: TimbreType = 'sine'): void {
+    this.currentTimbre = timbre;
     if (this.isPlaying) {
       this.updateFrequency(frequency);
       this.updateVolume(volume);
@@ -28,8 +31,8 @@ export class FrequencyEngine {
     this.oscillator = context.createOscillator();
     this.gainNode = context.createGain();
 
-    // Configure oscillator
-    this.oscillator.type = 'sine';
+    // Configure oscillator with timbre
+    applyTimbre(this.oscillator, context, timbre);
     this.oscillator.frequency.value = frequency;
 
     // Configure gain with fade in (start at 0)
@@ -87,6 +90,17 @@ export class FrequencyEngine {
     this.oscillator.frequency.linearRampToValueAtTime(frequency, now + 0.1);
 
     this.currentFrequency = frequency;
+  }
+
+  /**
+   * Update timbre (requires restart to take effect)
+   */
+  updateTimbre(timbre: TimbreType): void {
+    this.currentTimbre = timbre;
+    if (this.isPlaying && this.oscillator) {
+      const context = audioEngine.getContext();
+      applyTimbre(this.oscillator, context, timbre);
+    }
   }
 
   /**

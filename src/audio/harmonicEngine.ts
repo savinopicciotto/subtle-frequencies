@@ -4,6 +4,7 @@
  */
 
 import { audioEngine } from './AudioEngine';
+import { type TimbreType, applyTimbre } from './timbres';
 
 export type HarmonicEffect = 'none' | 'bend-up' | 'bend-down' | 'trickle' | 'shake' | 'buzz';
 
@@ -12,6 +13,7 @@ interface HarmonicLayer {
   beatFrequency: number; // Independent pulse/beat frequency in Hz
   volume: number;
   effect: HarmonicEffect; // Special effect type
+  layerTimbre: TimbreType | null; // Per-layer timbre override (null = use global)
   oscillator: OscillatorNode | null;
 
   // Amplitude modulation (tremolo/breathing)
@@ -84,9 +86,10 @@ export const HARMONIC_SERIES = [
 ];
 
 export class HarmonicEngine {
-  private baseFrequency = 432; // Fundamental frequency
+  private baseFrequency = 432;
   private layers: HarmonicLayer[] = [];
   private isPlaying = false;
+  private timbre: TimbreType = 'sine';
 
   /**
    * Add a harmonic layer with organic characteristics and effects
@@ -95,13 +98,15 @@ export class HarmonicEngine {
     ratio: number,
     beatFrequency: number = 0,
     volume: number = 0.3,
-    effect: HarmonicEffect = 'none'
+    effect: HarmonicEffect = 'none',
+    layerTimbre: TimbreType | null = null,
   ): void {
     const layer: HarmonicLayer = {
       ratio,
       beatFrequency,
       volume,
       effect,
+      layerTimbre,
       oscillator: null,
       lfoOscillator: null,
       lfoGain: null,
@@ -137,6 +142,35 @@ export class HarmonicEngine {
   clearLayers(): void {
     this.layers.forEach((layer) => this.stopLayer(layer));
     this.layers = [];
+  }
+
+  /**
+   * Update timbre for all harmonic oscillators
+   */
+  updateTimbre(timbre: TimbreType): void {
+    this.timbre = timbre;
+    if (this.isPlaying) {
+      const context = audioEngine.getContext();
+      this.layers.forEach((layer) => {
+        if (layer.oscillator) {
+          // Only update layers that don't have their own timbre override
+          applyTimbre(layer.oscillator, context, layer.layerTimbre || timbre);
+        }
+      });
+    }
+  }
+
+  /**
+   * Update timbre for a specific layer
+   */
+  updateLayerTimbre(index: number, layerTimbre: TimbreType | null): void {
+    if (index >= 0 && index < this.layers.length) {
+      this.layers[index].layerTimbre = layerTimbre;
+      if (this.isPlaying && this.layers[index].oscillator) {
+        const context = audioEngine.getContext();
+        applyTimbre(this.layers[index].oscillator!, context, layerTimbre || this.timbre);
+      }
+    }
   }
 
   /**
@@ -221,7 +255,7 @@ export class HarmonicEngine {
 
     // Create main oscillator
     layer.oscillator = context.createOscillator();
-    layer.oscillator.type = 'sine'; // Pure sine for harmonics
+    applyTimbre(layer.oscillator, context, layer.layerTimbre || this.timbre);
     layer.oscillator.frequency.value = baseHarmonicFreq;
     layer.oscillator.detune.value = layer.detuneAmount; // Subtle detuning
 
@@ -458,6 +492,7 @@ export class HarmonicEngine {
         beatFrequency: layer.beatFrequency,
         volume: layer.volume,
         effect: layer.effect,
+        layerTimbre: layer.layerTimbre,
       })),
     };
   }
@@ -465,7 +500,7 @@ export class HarmonicEngine {
   /**
    * Load a preset configuration
    */
-  loadPreset(layers: Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect }>): void {
+  loadPreset(layers: Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect; layerTimbre?: TimbreType | null }>): void {
     // Stop if currently playing
     const wasPlaying = this.isPlaying;
     if (wasPlaying) {
@@ -475,7 +510,7 @@ export class HarmonicEngine {
     // Clear and add new layers
     this.clearLayers();
     layers.forEach((layerConfig) => {
-      this.addLayer(layerConfig.ratio, layerConfig.beatFrequency, layerConfig.volume, layerConfig.effect);
+      this.addLayer(layerConfig.ratio, layerConfig.beatFrequency, layerConfig.volume, layerConfig.effect, layerConfig.layerTimbre ?? null);
     });
 
     // Restart if was playing

@@ -195,6 +195,17 @@ export const HARMONIC_PRESETS: HarmonicPreset[] = [
   },
 
   {
+    name: 'Sub Bass Foundation',
+    description: 'Deep subharmonics to ground high root frequencies',
+    layers: [
+      { ratio: 0.25, beatFrequency: 0, volume: 0.45, effect: 'none' },   // 2 octaves down - loudest
+      { ratio: 0.5, beatFrequency: 0, volume: 0.35, effect: 'none' },    // 1 octave down
+      { ratio: 1.5, beatFrequency: 0, volume: 0.05, effect: 'none' },    // Perfect 5th - subtle
+      { ratio: 2, beatFrequency: 0, volume: 0.02, effect: 'none' },      // Octave up - barely there
+    ],
+  },
+
+  {
     name: 'Phi Cascade',
     description: 'Golden ratio waterfall - divine proportion flows',
     layers: [

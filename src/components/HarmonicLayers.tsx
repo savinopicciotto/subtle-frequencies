@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { HARMONIC_SERIES, type HarmonicEffect } from '../audio/harmonicEngine';
 import { HARMONIC_PRESETS } from '../audio/harmonicPresets';
+import { type TimbreType, TIMBRES } from '../audio/timbres';
 
 interface HarmonicLayer {
   ratio: number;
@@ -14,6 +15,7 @@ interface HarmonicLayer {
   effect: HarmonicEffect;
   label: string;
   muted: boolean;
+  timbre: TimbreType | null;
 }
 
 interface HarmonicLayersProps {
@@ -25,6 +27,7 @@ interface HarmonicLayersProps {
   onUpdateLayerBeat: (index: number, beatFreq: number) => void;
   onUpdateLayerVolume: (index: number, volume: number) => void;
   onToggleLayerMute: (index: number) => void;
+  onUpdateLayerTimbre: (index: number, timbre: TimbreType | null) => void;
   onLoadPreset: (layers: Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect }>) => void;
 }
 
@@ -37,6 +40,7 @@ export function HarmonicLayers({
   onUpdateLayerBeat,
   onUpdateLayerVolume,
   onToggleLayerMute,
+  onUpdateLayerTimbre,
   onLoadPreset,
 }: HarmonicLayersProps) {
   const [selectedRatio, setSelectedRatio] = useState(2); // Default: Octave
@@ -264,6 +268,25 @@ export function HarmonicLayers({
                           }
                           className="slider w-full h-1"
                         />
+                      </div>
+
+                      {/* Per-Layer Timbre */}
+                      <div className={`space-y-1 ${layer.muted ? 'opacity-40 pointer-events-none' : ''}`}>
+                        <label className="text-xs text-gray-400">Timbre</label>
+                        <select
+                          value={layer.timbre || ''}
+                          onChange={(e) =>
+                            onUpdateLayerTimbre(index, e.target.value ? e.target.value as TimbreType : null)
+                          }
+                          className="w-full px-2 py-1 text-xs bg-dark-base text-white border border-white/20 rounded focus:outline-none focus:ring-1 focus:ring-accent-gold/50"
+                        >
+                          <option value="" className="bg-dark-base">Global (default)</option>
+                          {TIMBRES.map((t) => (
+                            <option key={t.type} value={t.type} className="bg-dark-base">
+                              {t.label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   );

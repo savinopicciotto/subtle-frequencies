@@ -5,6 +5,7 @@
 
 import type { HarmonicEffect } from './harmonicEngine';
 import type { TextureType } from './textureEngine';
+import { type TimbreType, applyTimbre } from './timbres';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -13,6 +14,7 @@ export interface AudioExportParams {
   frequency: number;
   frequencyVolume: number;
   frequencyPlaying: boolean;
+  timbre: TimbreType;
 
   binauralEnabled: boolean;
   binauralBaseFreq: number;
@@ -25,6 +27,7 @@ export interface AudioExportParams {
     beatFrequency: number;
     volume: number;
     effect: HarmonicEffect;
+    timbre?: TimbreType | null;
   }>;
 
   textureType: TextureType;
@@ -48,7 +51,7 @@ function buildFrequencyGraph(
   if (!params.frequencyPlaying || params.frequency <= 0) return;
 
   const osc = ctx.createOscillator();
-  osc.type = 'sine';
+  applyTimbre(osc, ctx, params.timbre);
   osc.frequency.value = params.frequency;
 
   const gain = ctx.createGain();
@@ -118,7 +121,7 @@ function buildHarmonicGraph(
 
     // Main oscillator
     const osc = ctx.createOscillator();
-    osc.type = 'sine';
+    applyTimbre(osc, ctx, layer.timbre || params.timbre);
     osc.frequency.value = harmonicFreq;
     // Deterministic subtle detune per layer (±1 cent)
     osc.detune.value = ((idx * 0.618) % 1 - 0.5) * 2;

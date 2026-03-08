@@ -23,6 +23,7 @@ import type { AudioExportParams } from './audio/audioExport';
 import type { Preset } from './utils/presets';
 import type { BrainwaveState } from './audio/binauralEngine';
 import type { TextureType } from './audio/textureEngine';
+import { type TimbreType, TIMBRES } from './audio/timbres';
 
 function App() {
   const { isInitialized, initialize } = useAudioContext();
@@ -38,6 +39,7 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [frequency, setFrequency] = useState(432);
   const [frequencyVolume, setFrequencyVolume] = useState(0.5);
+  const [timbre, setTimbre] = useState<TimbreType>('sine');
   const [binauralEnabled, setBinauralEnabled] = useState(false);
   const [binauralState, setBinauralState] = useState<BrainwaveState>('alpha');
   const [binauralBeatHz, setBinauralBeatHz] = useState(10);
@@ -46,7 +48,7 @@ function App() {
   const [textureVolume, setTextureVolume] = useState(0.2);
   const [harmonicsEnabled, setHarmonicsEnabled] = useState(false);
   const [harmonicLayers, setHarmonicLayers] = useState<
-    Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect; label: string; muted: boolean }>
+    Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect; label: string; muted: boolean; timbre: TimbreType | null }>
   >([]);
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -81,7 +83,7 @@ function App() {
       setIsPlaying(false);
     } else {
       // Start all engines
-      frequencyEngine.current.start(frequency, frequencyVolume);
+      frequencyEngine.current.start(frequency, frequencyVolume, timbre);
       if (binauralEnabled) {
         binauralEngine.current.start(frequency, binauralBeatHz, binauralVolume);
       }
@@ -107,6 +109,13 @@ function App() {
     }
   };
 
+  // Update timbre
+  const handleTimbreChange = (newTimbre: TimbreType) => {
+    setTimbre(newTimbre);
+    frequencyEngine.current.updateTimbre(newTimbre);
+    harmonicEngine.current.updateTimbre(newTimbre);
+  };
+
   // Update frequency volume
   const handleFrequencyVolumeChange = (vol: number) => {
     setFrequencyVolume(vol);
@@ -121,6 +130,7 @@ function App() {
     frequency,
     frequencyVolume,
     frequencyPlaying: isPlaying,
+    timbre,
     binauralEnabled,
     binauralBaseFreq: frequency,
     binauralBeatHz,
@@ -131,6 +141,7 @@ function App() {
       beatFrequency: l.beatFrequency,
       volume: l.volume,
       effect: l.effect,
+      timbre: l.timbre,
     })),
     textureType: texture,
     textureVolume,
@@ -216,7 +227,7 @@ function App() {
   const handleAddHarmonicLayer = (ratio: number, beatFreq: number, volume: number, effect: HarmonicEffect) => {
     // Add to state
     const label = `${ratio}x Harmonic`;
-    const newLayer = { ratio, beatFrequency: beatFreq, volume, effect, label, muted: false };
+    const newLayer = { ratio, beatFrequency: beatFreq, volume, effect, label, muted: false, timbre: null as TimbreType | null };
     const newLayers = [...harmonicLayers, newLayer];
     setHarmonicLayers(newLayers);
 
@@ -225,7 +236,7 @@ function App() {
     harmonicEngine.current.clearLayers();
 
     newLayers.forEach(layer => {
-      harmonicEngine.current.addLayer(layer.ratio, layer.beatFrequency, layer.volume, layer.effect);
+      harmonicEngine.current.addLayer(layer.ratio, layer.beatFrequency, layer.volume, layer.effect, layer.timbre);
     });
 
     // Start if main audio is playing
@@ -243,6 +254,7 @@ function App() {
       ...layer,
       label: `${layer.ratio}x Harmonic`,
       muted: false,
+      timbre: null as TimbreType | null,
     }));
     setHarmonicLayers(layersWithLabels);
 
@@ -277,7 +289,7 @@ function App() {
     harmonicEngine.current.clearLayers();
 
     newLayers.forEach(layer => {
-      harmonicEngine.current.addLayer(layer.ratio, layer.beatFrequency, layer.volume, layer.effect);
+      harmonicEngine.current.addLayer(layer.ratio, layer.beatFrequency, layer.volume, layer.effect, layer.timbre);
     });
 
     // Start if main audio is playing and we still have layers
@@ -309,6 +321,14 @@ function App() {
     layer.muted = !layer.muted;
     setHarmonicLayers(newLayers);
     harmonicEngine.current.updateLayerVolume(index, layer.muted ? 0 : layer.volume);
+  };
+
+  // Update timbre for a specific harmonic layer
+  const handleUpdateHarmonicTimbre = (index: number, layerTimbre: TimbreType | null) => {
+    const newLayers = [...harmonicLayers];
+    newLayers[index].timbre = layerTimbre;
+    setHarmonicLayers(newLayers);
+    harmonicEngine.current.updateLayerTimbre(index, layerTimbre);
   };
 
   // Handle timer end
@@ -349,10 +369,29 @@ function App() {
     setTexture(preset.texture);
     setTextureVolume(preset.textureVolume);
 
+    // Restore timbre
+    const presetTimbre = preset.timbre || 'sine';
+    setTimbre(presetTimbre);
+
+    // Restore harmonics
+    const presetHarmonicsEnabled = preset.harmonicsEnabled ?? false;
+    const presetLayers = (preset.harmonicLayers || []).map((l) => ({
+      ratio: l.ratio,
+      beatFrequency: l.beatFrequency,
+      volume: l.volume,
+      effect: l.effect,
+      label: l.label || `×${l.ratio}`,
+      muted: l.muted ?? false,
+      timbre: l.timbre ?? null,
+    }));
+    setHarmonicsEnabled(presetHarmonicsEnabled);
+    setHarmonicLayers(presetLayers);
+
     // If playing, update engines
     if (isPlaying) {
       frequencyEngine.current.updateFrequency(preset.frequency);
       frequencyEngine.current.updateVolume(preset.frequencyVolume);
+      frequencyEngine.current.updateTimbre(presetTimbre);
 
       if (preset.binauralEnabled && !binauralEnabled) {
         binauralEngine.current.start(preset.frequency, preset.binauralBeatHz, preset.binauralVolume);
@@ -372,6 +411,17 @@ function App() {
       } else if (preset.texture !== 'none') {
         textureEngine.current.updateVolume(preset.textureVolume);
       }
+
+      // Update harmonic engine
+      harmonicEngine.current.stopImmediate();
+      harmonicEngine.current.clearLayers();
+      harmonicEngine.current.updateTimbre(presetTimbre);
+      if (presetHarmonicsEnabled && presetLayers.length > 0) {
+        presetLayers.filter((l) => !l.muted).forEach((layer) => {
+          harmonicEngine.current.addLayer(layer.ratio, layer.beatFrequency, layer.volume, layer.effect, layer.timbre);
+        });
+        harmonicEngine.current.start();
+      }
     }
   };
 
@@ -387,6 +437,17 @@ function App() {
     binauralVolume,
     textureVolume,
     timerMinutes: 15,
+    timbre,
+    harmonicsEnabled,
+    harmonicLayers: harmonicLayers.map((l) => ({
+      ratio: l.ratio,
+      beatFrequency: l.beatFrequency,
+      volume: l.volume,
+      effect: l.effect,
+      label: l.label,
+      muted: l.muted,
+      timbre: l.timbre,
+    })),
   });
 
   // Cleanup on unmount
@@ -462,6 +523,29 @@ function App() {
           onPlayToggle={handlePlayToggle}
         />
 
+        {/* Timbre / Voice */}
+        <div className="glass-card p-6 space-y-3">
+          <h2 className="text-lg font-display">Voice / Timbre</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {TIMBRES.map((t) => (
+              <button
+                key={t.type}
+                onClick={() => handleTimbreChange(t.type)}
+                className={`p-2 rounded-lg text-left transition-all ${
+                  timbre === t.type
+                    ? 'bg-gradient-to-r from-accent-gold/20 to-accent-amber/20 border border-accent-gold/50'
+                    : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <div className={`text-sm font-medium ${timbre === t.type ? 'text-accent-gold' : 'text-gray-200'}`}>
+                  {t.label}
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">{t.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Binaural Beats */}
         <BinauralBeats
           enabled={binauralEnabled}
@@ -492,6 +576,7 @@ function App() {
           onUpdateLayerBeat={handleUpdateHarmonicBeat}
           onUpdateLayerVolume={handleUpdateHarmonicVolume}
           onToggleLayerMute={handleToggleHarmonicMute}
+          onUpdateLayerTimbre={handleUpdateHarmonicTimbre}
           onLoadPreset={handleLoadHarmonicPreset}
         />
 

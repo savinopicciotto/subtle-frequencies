@@ -4,6 +4,18 @@
 
 import type { TextureType } from '../audio/textureEngine';
 import type { BrainwaveState } from '../audio/binauralEngine';
+import type { HarmonicEffect } from '../audio/harmonicEngine';
+import type { TimbreType } from '../audio/timbres';
+
+export interface PresetHarmonicLayer {
+  ratio: number;
+  beatFrequency: number;
+  volume: number;
+  effect: HarmonicEffect;
+  label?: string;
+  muted?: boolean;
+  timbre?: TimbreType | null;
+}
 
 export interface Preset {
   name: string;
@@ -16,6 +28,9 @@ export interface Preset {
   binauralVolume: number;
   textureVolume: number;
   timerMinutes: number;
+  timbre?: TimbreType;
+  harmonicsEnabled?: boolean;
+  harmonicLayers?: PresetHarmonicLayer[];
 }
 
 export const HEALING_FREQUENCIES = [
