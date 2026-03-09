@@ -195,6 +195,19 @@ export const HARMONIC_PRESETS: HarmonicPreset[] = [
   },
 
   {
+    name: 'Solfeggio Harmonics',
+    description: 'Ancient 6-tone scale (UT-MI-FA-SOL-LA-TI) — set root to 396Hz for pure solfeggio',
+    layers: [
+      { ratio: 1, beatFrequency: 0, volume: 0.4, effect: 'none' },       // UT (396)
+      { ratio: 1.333, beatFrequency: 0.5, volume: 0.35, effect: 'none' }, // MI (528) — 4/3
+      { ratio: 1.614, beatFrequency: 0, volume: 0.3, effect: 'none' },    // FA (639) — ≈φ
+      { ratio: 1.871, beatFrequency: 1, volume: 0.25, effect: 'none' },   // SOL (741)
+      { ratio: 2.152, beatFrequency: 0, volume: 0.2, effect: 'none' },    // LA (852)
+      { ratio: 2.432, beatFrequency: 0.5, volume: 0.15, effect: 'none' }, // TI (963)
+    ],
+  },
+
+  {
     name: 'Sub Bass Foundation',
     description: 'Deep subharmonics to ground high root frequencies',
     layers: [
