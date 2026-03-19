@@ -74,6 +74,11 @@ export const OVERTONE_PROFILES: OvertoneProfile[] = [
     description: 'First 5 harmonics — learn the cluster',
     harmonics: [1, 2, 3, 4, 5],
   },
+  {
+    name: 'Golden Spiral',
+    description: 'φ subharmonics down, then φ harmonics up',
+    harmonics: [0.236, 0.382, 0.618, 1, 1.618, 2.618, 4.236, 6.854],
+  },
 ];
 
 // ─── Custom profile from Harmonic Layers ────────────────────────────
@@ -129,8 +134,11 @@ const HARMONIC_LABELS: Record<number, string> = {
 
 /** Well-known ratio labels for non-integer partials (from HARMONIC_SERIES) */
 const RATIO_LABELS: Record<string, string> = {
+  '0.236': '1/\u03C6\u00B3 (Golden Sub-Bass)',
   '0.25': '1/4 (2 Oct Down)',
+  '0.382': '1/\u03C6\u00B2 (Golden Subharmonic)',
   '0.5': '1/2 (Oct Down)',
+  '0.618': '1/\u03C6 (Golden Sub)',
   '0.75': '3/4 (P4 Down)',
   '1.333': '4/3 (Perfect 4th)',
   '1.414': '\u221A2 (Tritone)',

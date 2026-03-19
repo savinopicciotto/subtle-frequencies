@@ -56,8 +56,11 @@ export const PURE_RATIOS = {
 
 export const HARMONIC_SERIES = [
   // Subharmonics (below fundamental)
+  { ratio: 0.236, label: '1/φ³ (Golden Sub-Bass)' },
   { ratio: 0.25, label: 'Subharmonic 1/4 (2 Octaves Down)' },
+  { ratio: 0.382, label: '1/φ² (Golden Subharmonic)' },
   { ratio: 0.5, label: 'Subharmonic 1/2 (Octave Down)' },
+  { ratio: 0.618, label: '1/φ (Golden Sub)' },
   { ratio: 0.75, label: 'Subharmonic 3/4 (Perfect 4th Down)' },
 
   // Fundamental and harmonics

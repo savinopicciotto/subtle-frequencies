@@ -219,6 +219,14 @@ export function OvertoneTrainer({ engine, isPlaying, frequency, harmonicLayers }
                 clustered together. The intervals are wide and easy to identify — great for beginners.
               </div>
               <div className="p-2 bg-white/5 rounded">
+                <strong className="text-gray-200">Golden Spiral</strong> — Descends through golden ratio
+                subharmonics (1/&#x3C6;&#xB3;, 1/&#x3C6;&#xB2;, 1/&#x3C6;) below the fundamental, then
+                ascends through &#x3C6;, &#x3C6;&#xB2;, &#x3C6;&#xB3;, &#x3C6;&#x2074; above. These
+                intervals don't occur in natural acoustics — they're based on the golden ratio
+                (1.618...), which appears in phyllotaxis, shell spirals, and sacred geometry.
+                Creates a symmetrical expansion outward from the fundamental.
+              </div>
+              <div className="p-2 bg-white/5 rounded">
                 <strong className="text-gray-200">From Harmonic Layers</strong> — Uses whatever ratios you've
                 configured in the Harmonic Layers section above. These may include non-natural intervals
                 like the golden ratio (1.618x) or solfeggio ratios — designed sounds rather than acoustic
