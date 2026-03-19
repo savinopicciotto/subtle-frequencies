@@ -8,6 +8,7 @@ import { FrequencyEngine } from './audio/frequencyEngine';
 import { BinauralEngine } from './audio/binauralEngine';
 import { TextureEngine } from './audio/textureEngine';
 import { HarmonicEngine, type HarmonicEffect } from './audio/harmonicEngine';
+import { OvertoneTrainer as OvertoneTrainerEngine } from './audio/overtoneTrainer';
 import { CymaticVisualizer } from './components/CymaticVisualizer';
 import { FrequencyPlayer } from './components/FrequencyPlayer';
 import { BinauralBeats } from './components/BinauralBeats';
@@ -16,6 +17,7 @@ import { SessionTimer } from './components/SessionTimer';
 import { PresetManager } from './components/PresetManager';
 import { HarmonicLayers } from './components/HarmonicLayers';
 import { ExportModal } from './components/ExportModal';
+import { OvertoneTrainer } from './components/OvertoneTrainer';
 import { Spectrometer } from './components/Spectrometer';
 import { StatusBar } from './components/StatusBar';
 import { audioEngine } from './audio/AudioEngine';
@@ -34,6 +36,7 @@ function App() {
   const binauralEngine = useRef(new BinauralEngine());
   const textureEngine = useRef(new TextureEngine());
   const harmonicEngine = useRef(new HarmonicEngine());
+  const overtoneTrainer = useRef(new OvertoneTrainerEngine());
 
   // State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -80,6 +83,7 @@ function App() {
       if (harmonicsEnabled) {
         harmonicEngine.current.stop();
       }
+      overtoneTrainer.current.stop();
       setIsPlaying(false);
     } else {
       // Start all engines
@@ -114,6 +118,7 @@ function App() {
     setTimbre(newTimbre);
     frequencyEngine.current.updateTimbre(newTimbre);
     harmonicEngine.current.updateTimbre(newTimbre);
+    overtoneTrainer.current.setTimbre(newTimbre);
   };
 
   // Update frequency volume
@@ -578,6 +583,14 @@ function App() {
           onToggleLayerMute={handleToggleHarmonicMute}
           onUpdateLayerTimbre={handleUpdateHarmonicTimbre}
           onLoadPreset={handleLoadHarmonicPreset}
+        />
+
+        {/* Overtone Trainer */}
+        <OvertoneTrainer
+          engine={overtoneTrainer.current}
+          isPlaying={isPlaying}
+          frequency={frequency}
+          harmonicLayers={harmonicLayers}
         />
 
         {/* Session Timer */}
