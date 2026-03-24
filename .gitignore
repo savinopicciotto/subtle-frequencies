@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Utility scripts
+generate_icons.py
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

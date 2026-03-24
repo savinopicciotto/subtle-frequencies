@@ -20,6 +20,7 @@ import { ExportModal } from './components/ExportModal';
 import { OvertoneTrainer } from './components/OvertoneTrainer';
 import { Spectrometer } from './components/Spectrometer';
 import { StatusBar } from './components/StatusBar';
+import { EmailCapture } from './components/EmailCapture';
 import { audioEngine } from './audio/AudioEngine';
 import type { AudioExportParams } from './audio/audioExport';
 import type { Preset } from './utils/presets';
@@ -603,10 +604,8 @@ function App() {
           onUpdateCurrentPreset={() => {}}
         />
 
-        {/* Ad Placeholder */}
-        <div className="h-[50px] bg-white/5 rounded-lg border border-white/10 flex items-center justify-center text-xs text-gray-500">
-          {/* Ad placement - 320x50 banner */}
-        </div>
+        {/* Waiting List Signup */}
+        <EmailCapture />
 
         {/* Footer */}
         <footer className="text-center text-sm text-gray-500 py-8">
