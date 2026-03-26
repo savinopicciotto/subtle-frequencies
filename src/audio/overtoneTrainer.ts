@@ -111,6 +111,50 @@ export function buildCustomProfile(
   };
 }
 
+/**
+ * Parse a custom ratio input string and create a single-harmonic profile.
+ *
+ * Input examples: "0.25x", "0.5", "1.66", "φ" (special case)
+ *
+ * Returns null if:
+ * - Input is empty or whitespace
+ * - Parsing fails (NaN)
+ * - Ratio is not positive or is infinite
+ * - Ratio is outside the valid range [0.01, 100]
+ *
+ * Returns a profile with one harmonic if valid.
+ */
+export function parseAndCreateRatioProfile(input: string): OvertoneProfile | null {
+  // Trim whitespace
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  // Strip trailing "x" if present (case-insensitive)
+  let numStr = trimmed.toLowerCase().endsWith('x')
+    ? trimmed.slice(0, -1)
+    : trimmed;
+
+  // Parse as float
+  const ratio = parseFloat(numStr);
+
+  // Validate: must be a valid number
+  if (isNaN(ratio)) return null;
+
+  // Validate: must be positive and finite
+  if (ratio <= 0 || !isFinite(ratio)) return null;
+
+  // Validate: must be in usable range [0.01, 100]
+  if (ratio < 0.01 || ratio > 100) return null;
+
+  // Create profile with this single harmonic
+  const displayRatio = ratio.toFixed(3); // e.g., "0.250" or "1.660"
+  return {
+    name: `Custom: ${displayRatio}x`,
+    description: `User-entered ratio ${displayRatio}x`,
+    harmonics: [ratio],
+  };
+}
+
 // ─── Labels ─────────────────────────────────────────────────────────
 
 const HARMONIC_LABELS: Record<number, string> = {

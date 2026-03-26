@@ -10,6 +10,8 @@ import {
   CUSTOM_PROFILE_NAME,
   buildCustomProfile,
   getHarmonicLabel,
+  parseAndCreateRatioProfile,
+  type OvertoneProfile,
 } from '../audio/overtoneTrainer';
 import { encodeWAV } from '../audio/audioExport';
 
@@ -35,6 +37,8 @@ export function OvertoneTrainer({ engine, isPlaying, frequency, harmonicLayers }
   const [state, setState] = useState(engine.getState());
   const [expanded, setExpanded] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [customRatioInput, setCustomRatioInput] = useState('');
+  const [customProfiles, setCustomProfiles] = useState<OvertoneProfile[]>([]);
 
   // Subscribe to engine state changes
   useEffect(() => {
@@ -85,6 +89,22 @@ export function OvertoneTrainer({ engine, isPlaying, frequency, harmonicLayers }
       engine.setProfile(profile);
     }
   }, [engine, harmonicLayers]);
+
+  const handleAddCustomRatio = useCallback(() => {
+    const profile = parseAndCreateRatioProfile(customRatioInput);
+    if (profile) {
+      // Add to custom profiles list
+      setCustomProfiles([...customProfiles, profile]);
+      // Set as active profile
+      engine.setProfile(profile);
+      // Clear the input
+      setCustomRatioInput('');
+    } else {
+      // Silently fail (or show alert if you want)
+      // For now, just don't add anything
+      console.warn('Invalid ratio input:', customRatioInput);
+    }
+  }, [customRatioInput, customProfiles, engine]);
 
   const customProfile = buildCustomProfile(harmonicLayers);
   const hasCustomLayers = customProfile !== null;
@@ -384,6 +404,49 @@ export function OvertoneTrainer({ engine, isPlaying, frequency, harmonicLayers }
                 </div>
               </button>
             </div>
+          </div>
+
+          {/* Custom Ratio Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">Try a Custom Ratio</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="e.g., 0.25x, 0.5, 1.66"
+                value={customRatioInput}
+                onChange={(e) => setCustomRatioInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') handleAddCustomRatio();
+                }}
+                className="flex-1 px-3 py-2 text-sm bg-white/5 border border-white/10 rounded text-white placeholder-gray-500 focus:outline-none focus:border-accent-gold/50"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomRatio}
+                className="px-4 py-2 text-sm bg-white/10 border border-white/10 rounded hover:bg-white/20 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {/* Display custom profiles as buttons */}
+            {customProfiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
+                {customProfiles.map((profile) => (
+                  <button
+                    key={profile.name}
+                    type="button"
+                    onClick={() => engine.setProfile(profile)}
+                    className={`px-3 py-1 text-xs rounded transition-all ${
+                      state.profileName === profile.name
+                        ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-dark-base'
+                        : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    {profile.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Cycle duration */}
