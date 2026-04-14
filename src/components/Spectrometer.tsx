@@ -9,6 +9,8 @@ import { audioEngine } from '../audio/AudioEngine';
 interface SpectrometerProps {
   isPlaying: boolean;
   frequency: number;
+  forceExpanded?: boolean;
+  canvasHeight?: number;
 }
 
 interface Peak {
@@ -18,13 +20,16 @@ interface Peak {
   y: number;
 }
 
-export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
+export function Spectrometer({ isPlaying, frequency, forceExpanded = false, canvasHeight }: SpectrometerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const expanded = forceExpanded || isExpanded;
+  const resolvedHeight = canvasHeight ?? (forceExpanded ? 280 : 150);
+
   useEffect(() => {
-    if (!isPlaying || !isExpanded) {
+    if (!isPlaying || !expanded) {
       cancelAnimationFrame(animationRef.current);
       const canvas = canvasRef.current;
       if (canvas) {
@@ -207,7 +212,24 @@ export function Spectrometer({ isPlaying, frequency }: SpectrometerProps) {
     return () => {
       cancelAnimationFrame(animationRef.current);
     };
-  }, [isPlaying, isExpanded, frequency]);
+  }, [isPlaying, expanded, frequency]);
+
+  if (forceExpanded) {
+    return (
+      <div>
+        <canvas
+          ref={canvasRef}
+          className="w-full rounded-lg"
+          style={{ height: `${resolvedHeight}px` }}
+        />
+        {!isPlaying && (
+          <div className="text-xs text-gray-500 text-center mt-2">
+            Start playing to see frequency analysis
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="glass-card overflow-hidden">

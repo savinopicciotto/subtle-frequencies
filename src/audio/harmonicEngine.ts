@@ -65,6 +65,9 @@ export const HARMONIC_SERIES = [
 
   // Fundamental and harmonics
   { ratio: 1, label: 'Fundamental' },
+  { ratio: 1.167, label: '7/6 (Septimal Minor 3rd)' },
+  { ratio: 1.2, label: '6/5 (Minor 3rd)' },
+  { ratio: 1.25, label: '5/4 (Major 3rd)' },
   { ratio: 1.333, label: '4/3 (Perfect 4th)' },
   { ratio: 1.414, label: '√2 (Tritone - Devil\'s Interval)' },
   { ratio: 1.5, label: '3/2 (Perfect 5th)' },
@@ -235,6 +238,15 @@ export class HarmonicEngine {
         layer.gainNode.gain.cancelScheduledValues(now);
         layer.gainNode.gain.setValueAtTime(layer.gainNode.gain.value, now);
         layer.gainNode.gain.linearRampToValueAtTime(volume, now + 0.05);
+
+        // Zero out modulation sources when muting so they don't bleed through.
+        // Restore proportionally when unmuting.
+        if (layer.breathingGain) {
+          layer.breathingGain.gain.value = volume * 0.2;
+        }
+        if (layer.lfoGain) {
+          layer.lfoGain.gain.value = volume * 0.4;
+        }
       }
     }
   }

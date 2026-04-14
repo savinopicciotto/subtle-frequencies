@@ -219,6 +219,19 @@ export const HARMONIC_PRESETS: HarmonicPreset[] = [
   },
 
   {
+    name: 'Natural Harmonic Series',
+    description: 'The first 6 overtones of the harmonic series — pure just intonation intervals',
+    layers: [
+      { ratio: 2,     beatFrequency: 0, volume: 0.35, effect: 'none' },  // 2:1 Octave
+      { ratio: 1.5,   beatFrequency: 0, volume: 0.30, effect: 'none' },  // 3:2 Perfect 5th
+      { ratio: 1.333, beatFrequency: 0, volume: 0.28, effect: 'none' },  // 4:3 Perfect 4th
+      { ratio: 1.25,  beatFrequency: 0, volume: 0.25, effect: 'none' },  // 5:4 Major 3rd
+      { ratio: 1.2,   beatFrequency: 0, volume: 0.22, effect: 'none' },  // 6:5 Minor 3rd
+      { ratio: 1.167, beatFrequency: 0, volume: 0.20, effect: 'none' },  // 7:6 Septimal Minor 3rd
+    ],
+  },
+
+  {
     name: 'Phi Cascade',
     description: 'Golden ratio waterfall - divine proportion flows',
     layers: [

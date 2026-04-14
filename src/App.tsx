@@ -20,6 +20,7 @@ import { ExportModal } from './components/ExportModal';
 import { OvertoneTrainer } from './components/OvertoneTrainer';
 import { Spectrometer } from './components/Spectrometer';
 import { StatusBar } from './components/StatusBar';
+import { TeachingPanel } from './components/TeachingPanel';
 import { EmailCapture } from './components/EmailCapture';
 import { audioEngine } from './audio/AudioEngine';
 import type { AudioExportParams } from './audio/audioExport';
@@ -55,6 +56,7 @@ function App() {
     Array<{ ratio: number; beatFrequency: number; volume: number; effect: HarmonicEffect; label: string; muted: boolean; timbre: TimbreType | null }>
   >([]);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showTeachingPanel, setShowTeachingPanel] = useState(false);
 
   // Initialize audio on user gesture
   const handleStart = async () => {
@@ -500,6 +502,32 @@ function App() {
           onShareClick={handleExportClick}
           harmonicLayers={harmonicLayers}
         />
+
+        {/* Teaching Mode toggle */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowTeachingPanel(!showTeachingPanel)}
+            className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
+              showTeachingPanel
+                ? 'border-accent-gold/60 bg-accent-gold/10 text-accent-gold'
+                : 'border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20'
+            }`}
+          >
+            ✦ Teaching Mode
+          </button>
+        </div>
+
+        {/* Teaching Panel */}
+        {showTeachingPanel && (
+          <TeachingPanel
+            isPlaying={isPlaying}
+            frequency={frequency}
+            harmonicLayers={harmonicLayers}
+            harmonicsEnabled={harmonicsEnabled}
+            onToggleLayerMute={handleToggleHarmonicMute}
+          />
+        )}
 
         {/* Status Bar */}
         <StatusBar
